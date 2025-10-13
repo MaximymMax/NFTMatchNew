@@ -116,7 +116,7 @@ main {
     line-height: 1.6;
     text-align: left;
     margin-left: 0.6rem;
-    font-weight: 400; /* <-- ДОБАВЛЕНО: Явно указываем обычную толщину */
+    font-weight: 700; /* <-- ДОБАВЛЕНО: Явно указываем обычную толщину */
 }
 
 .top-lottie-container {
@@ -240,19 +240,12 @@ main {
     justify-content: space-between;
 }
 
-.card-content h2 {
-    font-size: 1rem;
-    font-weight: 700;
-    margin: 0 0 0.45rem 0;
-    line-height: 1.2;
-}
-
 .card-content p {
     font-size: 0.75rem;
     color: var(--text-secondary);
     line-height: 1.4;
     margin: 0;
-    font-weight: 400; /* <-- ДОБАВЛЕНО: Явно указываем обычную толщину */
+    font-weight: 700; /* <-- ДОБАВЛЕНО: Явно указываем обычную толщину */
 }
 
 .card-action {
@@ -293,6 +286,21 @@ main {
 /* ------------------------------------------- */
 /* --- Media Queries для ПК --- */
 /* ------------------------------------------- */
+
+.card-content h2 {
+    font-size: 1rem;
+    font-weight: 700 !important; /* <-- ДОБАВЛЕНО !important */
+    margin: 0 0 0.45rem 0;
+    line-height: 1.2;
+}
+
+.card-content p {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin: 0;
+    font-weight: 700;
+}
 
 @media (min-width: 601px) {
     
@@ -353,12 +361,9 @@ main {
 
     .card-content h2 {
         font-size: 1rem;
-        font-weight: 600; /* <-- И это тоже правильно */
+        font-weight: 700 !important; /* <-- ДОБАВЛЕНО !important */
         margin: 0 0 0.45rem 0;
         line-height: 1.2;
-    }
-    .card-content p {
-        font-size: 0.9rem;
     }
 }
 
