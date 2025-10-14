@@ -104,7 +104,13 @@ const GIFT_NAME_TO_ID = {
     "Artisan Brick": "6005797617768858105",
     "Clover Pin": "5960747083030856414",
     "Sky Stilettos": "5870947077877400011",
-    "Fresh Socks": "5895603153683874485"
+    "Fresh Socks": "5895603153683874485",
+    "Happy Brownie": "6006064678835323371",
+    "Ice Cream": "5900177027566142759",
+    "Spring Basket": "5773725897517433693",
+    "Instant Ramen": "6005564615793050414",
+    "Faith Amulet": "6003456431095808759",
+    "Mousse Cake": "5935877878062253519"
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1627,4 +1633,5 @@ const lazyLoadCallback = (entries, observer) => {
 
     // 5. Запускаем общую функцию инициализации
     initPage();
+
 });
