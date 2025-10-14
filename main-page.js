@@ -1,6 +1,4 @@
-// main-page.js
-
-document.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('load', () => { 
     
     // URL-адреса и ключ кэша
     const SERVER_BASE_URL = 'https://nftmatchbot20250730152328.azurewebsites.net';
@@ -24,24 +22,19 @@ document.addEventListener('DOMContentLoaded', () => {
             html.classList.add('body-gated'); 
             body.classList.add('body-gated'); 
 
-            requestAnimationFrame(() => {
-                if (window.topLottieAnimation) {
-                    window.topLottieAnimation.stop();
-                    console.log('Top Lottie animation stopped.');
-                }
-                if (window.cardLottieAnimation) {
-                    window.cardLottieAnimation.stop();
-                    console.log('Card Lottie animation stopped.');
-                }
-            });
+            if (window.topLottieAnimation) {
+                window.topLottieAnimation.stop();
+                console.log('Top Lottie animation stopped.');
+            }
+            if (window.cardLottieAnimation) {
+                window.cardLottieAnimation.stop();
+                console.log('Card Lottie animation stopped.');
+            }
 
             return false;
         }
     };
 
-    /**
-     * Сигнализирует Telegram о готовности Web App.
-     */
     const signalTelegramAppReady = () => {
         if (window.Telegram && window.Telegram.WebApp) {
             console.log('Signaling Telegram: WebApp is ready.');
@@ -49,9 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    /**
-     * Загружает и кэширует список подарков.
-     */
     const preloadGiftNames = async () => {
         try {
             const cachedData = sessionStorage.getItem(CACHE_KEY);
@@ -87,5 +77,4 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isTelegramEnvironment) {
         preloadGiftNames();
     }
-
 });
