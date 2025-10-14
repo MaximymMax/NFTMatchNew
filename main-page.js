@@ -10,13 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tgGateOverlay = document.getElementById('tg-gate-overlay');
     const body = document.body;
 
-    /**
-     * Проверяет, запущено ли приложение в Telegram.
-     * Если нет, показывает экран блокировки и останавливает дальнейшее выполнение.
-     * @returns {boolean} - true, если мы в Telegram, иначе false.
-     */
     const checkEnvironmentAndGate = () => {
-        return true;
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
             console.log('Running inside Telegram WebApp. Initializing app...');
             return true;
@@ -30,9 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
             html.classList.add('body-gated'); 
             body.classList.add('body-gated'); 
 
-            // 🔥 ИСПРАВЛЕНИЕ: Используем requestAnimationFrame для надежной остановки анимаций
-            // Этот метод гарантирует, что код выполнится после того, как анимации будут 
-            // точно созданы и доступны в `window`.
             requestAnimationFrame(() => {
                 if (window.topLottieAnimation) {
                     window.topLottieAnimation.stop();
@@ -96,4 +87,5 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isTelegramEnvironment) {
         preloadGiftNames();
     }
+
 });
