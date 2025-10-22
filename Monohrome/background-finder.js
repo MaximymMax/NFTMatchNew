@@ -1,114 +1,113 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- URL API & Constants ---
     const SERVER_BASE_URL = 'https://nftmatchbot20250730152328.azurewebsites.net';
     const API_PHOTO_URL = 'https://cdn.changes.tg/gifts/models';
     const API_GIFT_ORIGINALS_URL = 'https://cdn.changes.tg/gifts/originals'; 
 
-const GIFT_NAME_TO_ID = {
-    "Santa Hat": "5983471780763796287",
-    "Signet Ring": "5936085638515261992",
-    "Precious Peach": "5933671725160989227",
-    "Plush Pepe": "5936013938331222567",
-    "Spiced Wine": "5913442287462908725",
-    "Jelly Bunny": "5915502858152706668",
-    "Durov's Cap": "5915521180483191380",
-    "Perfume Bottle": "5913517067138499193",
-    "Eternal Rose": "5882125812596999035",
-    "Berry Box": "5882252952218894938",
-    "Vintage Cigar": "5857140566201991735",
-    "Magic Potion": "5846226946928673709",
-    "Kissed Frog": "5845776576658015084",
-    "Hex Pot": "5825801628657124140",
-    "Evil Eye": "5825480571261813595",
-    "Sharp Tongue": "5841689550203650524",
-    "Trapped Heart": "5841391256135008713",
-    "Skull Flower": "5839038009193792264",
-    "Scared Cat": "5837059369300132790",
-    "Spy Agaric": "5821261908354794038",
-    "Homemade Cake": "5783075783622787539",
-    "Genie Lamp": "5933531623327795414",
-    "Lunar Snake": "6028426950047957932",
-    "Party Sparkler": "6003643167683903930",
-    "Jester Hat": "5933590374185435592",
-    "Witch Hat": "5821384757304362229",
-    "Hanging Star": "5915733223018594841",
-    "Love Candle": "5915550639663874519",
-    "Cookie Heart": "6001538689543439169",
-    "Desk Calendar": "5782988952268964995",
-    "Jingle Bells": "6001473264306619020",
-    "Snow Mittens": "5980789805615678057",
-    "Voodoo Doll": "5836780359634649414",
-    "Mad Pumpkin": "5841632504448025405",
-    "Hypno Lollipop": "5825895989088617224",
-    "B-Day Candle": "5782984811920491178",
-    "Bunny Muffin": "5935936766358847989",
-    "Astral Shard": "5933629604416717361",
-    "Flying Broom": "5837063436634161765",
-    "Crystal Ball": "5841336413697606412",
-    "Eternal Candle": "5821205665758053411",
-    "Swiss Watch": "5936043693864651359",
-    "Ginger Cookie": "5983484377902875708",
-    "Mini Oscar": "5879737836550226478",
-    "Lol Pop": "5170594532177215681",
-    "Ion Gem": "5843762284240831056",
-    "Star Notepad": "5936017773737018241",
-    "Loot Bag": "5868659926187901653",
-    "Love Potion": "5868348541058942091",
-    "Toy Bear": "5868220813026526561",
-    "Diamond Ring": "5868503709637411929",
-    "Sakura Flower": "5167939598143193218",
-    "Sleigh Bell": "5981026247860290310",
-    "Top Hat": "5897593557492957738",
-    "Record Player": "5856973938650776169",
-    "Winter Wreath": "5983259145522906006",
-    "Snow Globe": "5981132629905245483",
-    "Electric Skull": "5846192273657692751",
-    "Tama Gadget": "6023752243218481939",
-    "Candy Cane": "6003373314888696650",
-    "Neko Helmet": "5933793770951673155",
-    "Jack-in-the-Box": "6005659564635063386",
-    "Easter Egg": "5773668482394620318",
-    "Bonded Ring": "5870661333703197240",
-    "Pet Snake": "6023917088358269866",
-    "Snake Box": "6023679164349940429",
-    "Xmas Stocking": "6003767644426076664",
-    "Big Year": "6028283532500009446",
-    "Holiday Drink": "6003735372041814769",
-    "Gem Signet": "5859442703032386168",
-    "Light Sword": "5897581235231785485",
-    "Restless Jar": "5870784783948186838",
-    "Nail Bracelet": "5870720080265871962",
-    "Heroic Helmet": "5895328365971244193",
-    "Bow Tie": "5895544372761461960",
-    "Heart Locket": "5868455043362980631",
-    "Lush Bouquet": "5871002671934079382",
-    "Whip Cupcake": "5933543975653737112",
-    "Joyful Bundle": "5870862540036113469",
-    "Cupid Charm": "5868561433997870501",
-    "Valentine Box": "5868595669182186720",
-    "Snoop Dogg": "6014591077976114307",
-    "Swag Bag": "6012607142387778152",
-    "Snoop Cigar": "6012435906336654262",
-    "Low Rider": "6014675319464657779",
-    "Westside Sign": "6014697240977737490",
-    "Stellar Rocket": "6042113507581755979",
-    "Jolly Chimp": "6005880141270483700",
-    "Moon Pendant": "5998981470310368313",
-    "Ionic Dryer": "5933937398953018107",
-    "Input Key": "5870972044522291836",
-    "Mighty Arm": "5895518353849582541",
-    "Artisan Brick": "6005797617768858105",
-    "Clover Pin": "5960747083030856414",
-    "Sky Stilettos": "5870947077877400011",
-    "Fresh Socks": "5895603153683874485",
-    "Happy Brownie": "6006064678835323371",
-    "Ice Cream": "5900177027566142759",
-    "Spring Basket": "5773725897517433693",
-    "Instant Ramen": "6005564615793050414",
-    "Faith Amulet": "6003456431095808759",
-    "Mousse Cake": "5935877878062253519"
-};
+    const GIFT_NAME_TO_ID = {
+        "Santa Hat": "5983471780763796287",
+        "Signet Ring": "5936085638515261992",
+        "Precious Peach": "5933671725160989227",
+        "Plush Pepe": "5936013938331222567",
+        "Spiced Wine": "5913442287462908725",
+        "Jelly Bunny": "5915502858152706668",
+        "Durov's Cap": "5915521180483191380",
+        "Perfume Bottle": "5913517067138499193",
+        "Eternal Rose": "5882125812596999035",
+        "Berry Box": "5882252952218894938",
+        "Vintage Cigar": "5857140566201991735",
+        "Magic Potion": "5846226946928673709",
+        "Kissed Frog": "5845776576658015084",
+        "Hex Pot": "5825801628657124140",
+        "Evil Eye": "5825480571261813595",
+        "Sharp Tongue": "5841689550203650524",
+        "Trapped Heart": "5841391256135008713",
+        "Skull Flower": "5839038009193792264",
+        "Scared Cat": "5837059369300132790",
+        "Spy Agaric": "5821261908354794038",
+        "Homemade Cake": "5783075783622787539",
+        "Genie Lamp": "5933531623327795414",
+        "Lunar Snake": "6028426950047957932",
+        "Party Sparkler": "6003643167683903930",
+        "Jester Hat": "5933590374185435592",
+        "Witch Hat": "5821384757304362229",
+        "Hanging Star": "5915733223018594841",
+        "Love Candle": "5915550639663874519",
+        "Cookie Heart": "6001538689543439169",
+        "Desk Calendar": "5782988952268964995",
+        "Jingle Bells": "6001473264306619020",
+        "Snow Mittens": "5980789805615678057",
+        "Voodoo Doll": "5836780359634649414",
+        "Mad Pumpkin": "5841632504448025405",
+        "Hypno Lollipop": "5825895989088617224",
+        "B-Day Candle": "5782984811920491178",
+        "Bunny Muffin": "5935936766358847989",
+        "Astral Shard": "5933629604416717361",
+        "Flying Broom": "5837063436634161765",
+        "Crystal Ball": "5841336413697606412",
+        "Eternal Candle": "5821205665758053411",
+        "Swiss Watch": "5936043693864651359",
+        "Ginger Cookie": "5983484377902875708",
+        "Mini Oscar": "5879737836550226478",
+        "Lol Pop": "5170594532177215681",
+        "Ion Gem": "5843762284240831056",
+        "Star Notepad": "5936017773737018241",
+        "Loot Bag": "5868659926187901653",
+        "Love Potion": "5868348541058942091",
+        "Toy Bear": "5868220813026526561",
+        "Diamond Ring": "5868503709637411929",
+        "Sakura Flower": "5167939598143193218",
+        "Sleigh Bell": "5981026247860290310",
+        "Top Hat": "5897593557492957738",
+        "Record Player": "5856973938650776169",
+        "Winter Wreath": "5983259145522906006",
+        "Snow Globe": "5981132629905245483",
+        "Electric Skull": "5846192273657692751",
+        "Tama Gadget": "6023752243218481939",
+        "Candy Cane": "6003373314888696650",
+        "Neko Helmet": "5933793770951673155",
+        "Jack-in-the-Box": "6005659564635063386",
+        "Easter Egg": "5773668482394620318",
+        "Bonded Ring": "5870661333703197240",
+        "Pet Snake": "6023917088358269866",
+        "Snake Box": "6023679164349940429",
+        "Xmas Stocking": "6003767644426076664",
+        "Big Year": "6028283532500009446",
+        "Holiday Drink": "6003735372041814769",
+        "Gem Signet": "5859442703032386168",
+        "Light Sword": "5897581235231785485",
+        "Restless Jar": "5870784783948186838",
+        "Nail Bracelet": "5870720080265871962",
+        "Heroic Helmet": "5895328365971244193",
+        "Bow Tie": "5895544372761461960",
+        "Heart Locket": "5868455043362980631",
+        "Lush Bouquet": "5871002671934079382",
+        "Whip Cupcake": "5933543975653737112",
+        "Joyful Bundle": "5870862540036113469",
+        "Cupid Charm": "5868561433997870501",
+        "Valentine Box": "5868595669182186720",
+        "Snoop Dogg": "6014591077976114307",
+        "Swag Bag": "6012607142387778152",
+        "Snoop Cigar": "6012435906336654262",
+        "Low Rider": "6014675319464657779",
+        "Westside Sign": "6014697240977737490",
+        "Stellar Rocket": "6042113507581755979",
+        "Jolly Chimp": "6005880141270483700",
+        "Moon Pendant": "5998981470310368313",
+        "Ionic Dryer": "5933937398953018107",
+        "Input Key": "5870972044522291836",
+        "Mighty Arm": "5895518353849582541",
+        "Artisan Brick": "6005797617768858105",
+        "Clover Pin": "5960747083030856414",
+        "Sky Stilettos": "5870947077877400011",
+        "Fresh Socks": "5895603153683874485",
+        "Happy Brownie": "6006064678835323371",
+        "Ice Cream": "5900177027566142759",
+        "Spring Basket": "5773725897517433693",
+        "Instant Ramen": "6005564615793050414",
+        "Faith Amulet": "6003456431095808759",
+        "Mousse Cake": "5935877878062253519"
+    };
 
     const fixedColors = [
         { id: 'Amber', name: 'Amber', hex: '#DAB345', gradient: 'radial-gradient(circle, rgb(218, 179, 69) 0%, rgb(177, 128, 42) 100%)' },
@@ -193,7 +192,6 @@ const GIFT_NAME_TO_ID = {
         { id: 'Turquoise', name: 'Turquoise', hex: '#5EC0B8', gradient: 'radial-gradient(circle, rgb(94, 192, 184) 0%, rgb(61, 146, 142) 100%)' },
     ];
     
-    // --- Global State ---
     let state = {
         currentMode: 'findBgs',
         giftNames: [],
@@ -212,7 +210,6 @@ const GIFT_NAME_TO_ID = {
     };
     let searchTimeout = null;
 
-    // 🔥 НАЧАЛО ВСТАВКИ: ЛОГИКА LAZY LOADING
     let observerMap = new Map();
 
     const lazyLoadCallback = (entries, observer) => {
@@ -238,7 +235,6 @@ const GIFT_NAME_TO_ID = {
         if (!observer) {
             const options = {
                 root: scrollRoot,
-                // Агрессивная предзагрузка для списков, умеренная для сетки
                 rootMargin: type === 'list' ? '600px' : '400px' 
             };
             observer = new IntersectionObserver(lazyLoadCallback, options);
@@ -251,7 +247,6 @@ const GIFT_NAME_TO_ID = {
         });
     }
 
-    // --- Element References ---
     const modeSwitcher = document.querySelector('.mode-switcher');
     const findBgsControls = document.getElementById('find-bgs-controls');
     const findModelsControls = document.getElementById('find-models-controls');
@@ -260,7 +255,6 @@ const GIFT_NAME_TO_ID = {
     const resultsGrid = document.getElementById('results-grid');
 
 
-    // Picker elements
     const pickerArea = document.getElementById('picker-area');
     const pickerContainer = document.getElementById('pickerContainer');
     const pickerTargetColorsDisplay = document.getElementById('pickerTargetColorsDisplay');
@@ -273,7 +267,6 @@ const GIFT_NAME_TO_ID = {
     const modalBgName = document.getElementById('modal-bg-name');
     const modalCompatValue = document.getElementById('modal-compat-value');
     
-    // Dropdown Objects
     const dropdowns = {
         giftBgs: {
             header: document.getElementById('gift-dropdown-header-bgs'),
@@ -305,16 +298,11 @@ const GIFT_NAME_TO_ID = {
         }
     };
 
-    // --- CORE LOGIC ---
-
     function openDetailsModal(data) {
-        // Формируем URL для Lottie-анимации
         const lottieUrl = `https://cdn.changes.tg/gifts/models/${encodeURIComponent(data.giftName)}/lottie/${encodeURIComponent(data.modelName)}.json`;
 
-        // Устанавливаем фон для контейнера
         modalPhotoContainer.style.background = data.backgroundGradient || 'var(--surface-color)';
         
-        // Создаем и вставляем плеер анимации
         modalPhotoContainer.innerHTML = `
             <lottie-player
                 src="${lottieUrl}"
@@ -325,7 +313,6 @@ const GIFT_NAME_TO_ID = {
             ></lottie-player>
         `;
 
-        // Заполняем остальную информацию
         document.getElementById('modal-gift-name').textContent = data.giftName;
         modalModelName.textContent = data.modelName;
         modalBgName.textContent = data.bgName;
@@ -395,24 +382,69 @@ const GIFT_NAME_TO_ID = {
     }
     
     const getTelegramUserData = () => {
-        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-        if (tgUser) {
-            console.log("Telegram user data found:", tgUser);
-            return {
-                id: tgUser.id,
-                Username: tgUser.username || null,
-            };
-        }
-        console.log("Not running in Telegram Web App, sending null user data.");
-        return { id: null, Username: null };
-    };
+            let masterUserData = null;
+            try {
+                const cachedUserData = sessionStorage.getItem('tgUser');
+                if (cachedUserData) {
+                    console.log("User data LOADED from sessionStorage:", cachedUserData);
+                    masterUserData = JSON.parse(cachedUserData); // Читаем стандартный формат
+                }
+            } catch (e) {
+                console.error('Failed to parse user data from sessionStorage:', e);
+            }
 
-    // --- API & DATA FETCHING ---
+            if (!masterUserData) {
+                console.log("No user data in sessionStorage. Trying direct access (fallback)...");
+                const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+
+                if (tgUser) {
+                    console.log("Telegram user data found directly (fallback):", tgUser);
+                    // Сразу создаем стандартный формат
+                    masterUserData = { 
+                        telegramId: tgUser.id, 
+                        username: tgUser.username || null,
+                        // firstName и lastName нам здесь не нужны
+                    };
+                    
+                    try {
+                        // И сохраняем в кеш стандартный формат с ЧИСЛОМ
+                        const dataToSave = {
+                             ...masterUserData,
+                             telegramId: parseInt(tgUser.id, 10) // Гарантируем число при сохранении
+                        };
+                        sessionStorage.setItem('tgUser', JSON.stringify(dataToSave));
+                    } catch (e) { /* Ошибка сохранения не критична */ } 
+                }
+            }
+            
+            // ЕСЛИ ДАННЫЕ НАШЛИСЬ (в кеше или напрямую)
+            if (masterUserData) {
+                let numericId = null;
+                // Гарантированно преобразуем ID в число при ИСПОЛЬЗОВАНИИ
+                if (masterUserData.telegramId !== null && masterUserData.telegramId !== undefined) {
+                     numericId = parseInt(masterUserData.telegramId, 10);
+                     // Если parseInt вернул не число (NaN), ставим null
+                     if (isNaN(numericId)) { 
+                         numericId = null; 
+                         console.warn("Parsed telegramId is NaN, setting id to null.");
+                     }
+                }
+                // 
+                // ✅ ВОЗВРАЩАЕМ ОБЪЕКТ В ФОРМАТЕ { id, Username } ДЛЯ API ЭТОГО ФАЙЛА ✅
+                // 
+                return {
+                    id: numericId, // Теперь id (маленькая) и ГАРАНТИРОВАННО число или null
+                    Username: masterUserData.username // Username (большая)
+                };
+            }
+
+            // Если данных нет нигде
+            console.log("User data not found. Sending null in {id, Username} format.");
+            return { id: null, Username: null }; // Возвращаем null в нужном формате
+        };
 
     async function fetchAllGiftNames() {
-        const cacheKey = 'giftNamesCache'; // ❗ Используем тот же ключ, что и на gift-page.js
-
-        // 1. Пробуем загрузить из кэша
+        const cacheKey = 'giftNamesCache';
         try {
             const cachedData = sessionStorage.getItem(cacheKey);
             if (cachedData) {
@@ -427,7 +459,6 @@ const GIFT_NAME_TO_ID = {
             sessionStorage.removeItem(cacheKey);
         }
 
-        // 2. Если в кэше пусто, грузим с сервера
         const url = `${SERVER_BASE_URL}/api/ListGifts/AllGiftNames`;
         console.log(`%c[API Request] Fetching all gift names from: ${url}`, 'color: dodgerblue');
         try {
@@ -436,14 +467,12 @@ const GIFT_NAME_TO_ID = {
             state.giftNames = await response.json();
             console.log('%c[API Success] Loaded gift names from server:', 'color: green', state.giftNames);
 
-            // 3. Сохраняем в кэш
             try {
                 sessionStorage.setItem(cacheKey, JSON.stringify(state.giftNames));
             } catch (error) {
                 console.error('[Cache Error] Ошибка сохранения в кэш:', error);
             }
 
-            // 4. Отображаем
             populateDropdown(dropdowns.giftBgs.options, state.giftNames, 'gift');
             populateDropdown(dropdowns.giftModels.options, state.giftNames, 'gift');
 
@@ -453,36 +482,36 @@ const GIFT_NAME_TO_ID = {
     }
 
     async function fetchAllModelNames(giftName, updateDOM = true) {
-    if (!giftName) {
-        if (updateDOM) {
-            dropdowns.modelBgs.options.innerHTML = `<div class="list-option list-placeholder">Сначала выберите коллекцию</div>`;
+        if (!giftName) {
+            if (updateDOM) {
+                dropdowns.modelBgs.options.innerHTML = `<div class="list-option list-placeholder">Сначала выберите коллекцию</div>`;
+            }
+            state.modelNames = [];
+            return;
         }
-        state.modelNames = [];
-        return;
-    }
-    const url = `${SERVER_BASE_URL}/api/ListGifts/${encodeURIComponent(giftName)}/AllModelNames`;
-    console.log(`%c[API Request] Fetching models for "${giftName}" from: ${url}`, 'color: dodgerblue');
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const modelsDict = await response.json();
-        
-        state.modelNames = Object.entries(modelsDict).map(([name, isMonochrome]) => ({ name, isMonochrome }));
-        console.log(`%c[API Success] Loaded models for "${giftName}":`, 'color: green', state.modelNames);
+        const url = `${SERVER_BASE_URL}/api/ListGifts/${encodeURIComponent(giftName)}/AllModelNames`;
+        console.log(`%c[API Request] Fetching models for "${giftName}" from: ${url}`, 'color: dodgerblue');
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const modelsDict = await response.json();
+            
+            state.modelNames = Object.entries(modelsDict).map(([name, isMonochrome]) => ({ name, isMonochrome }));
+            console.log(`%c[API Success] Loaded models for "${giftName}":`, 'color: green', state.modelNames);
 
-        if (updateDOM) {
-            const modelNamesList = state.modelNames.map(m => m.name);
-            populateDropdown(dropdowns.modelBgs.options, modelNamesList, 'model');
-        }
+            if (updateDOM) {
+                const modelNamesList = state.modelNames.map(m => m.name);
+                populateDropdown(dropdowns.modelBgs.options, modelNamesList, 'model');
+            }
 
-    } catch (error) {
-        console.error(`[API Error] Ошибка при загрузке моделей для ${giftName}:`, error);
-        state.modelNames = [];
-        if (updateDOM) {
-            dropdowns.modelBgs.options.innerHTML = `<div class="list-option list-placeholder">Модели не найдены</div>`;
+        } catch (error) {
+            console.error(`[API Error] Ошибка при загрузке моделей для ${giftName}:`, error);
+            state.modelNames = [];
+            if (updateDOM) {
+                dropdowns.modelBgs.options.innerHTML = `<div class="list-option list-placeholder">Модели не найдены</div>`;
+            }
         }
     }
-}
 
     async function fetchAndParseMainColors(giftName, modelName) {
         const url = `${SERVER_BASE_URL}/api/ListGifts/${encodeURIComponent(giftName)}/${encodeURIComponent(modelName)}/MainColors`;
@@ -530,15 +559,15 @@ const GIFT_NAME_TO_ID = {
             apiUrl = `${SERVER_BASE_URL}/api/MonoCoof/TopBackgroundColorsByColors`;
             requestBody = {
                 ...getTelegramUserData(),
-                colors: targetHexColors
+                Colors: targetHexColors
             };
             console.log("%c[API Request] Using 3-color search:", 'color: purple', targetHexColors);
         } else if (state.findBgs.selectedGift && state.findBgs.selectedModel) {
             apiUrl = `${SERVER_BASE_URL}/api/MonoCoof/TopBackgroundColorsByNFT`;
             requestBody = {
                 ...getTelegramUserData(),
-                nameGift: state.findBgs.selectedGift,
-                nameModel: state.findBgs.selectedModel
+                NameGift: state.findBgs.selectedGift,
+                NameModel: state.findBgs.selectedModel
             };
             console.log(`%c[API Request] Using NFT-based search for: ${state.findBgs.selectedModel}`, 'color: dodgerblue');
         } else {
@@ -583,10 +612,10 @@ const GIFT_NAME_TO_ID = {
 
         const url = `${SERVER_BASE_URL}/api/MonoCoof/TopNftByColor`;
         const requestBody = {
-            ...getTelegramUserData(), // <-- ДОБАВЛЕНО
-            nameGift: state.findModels.selectedGift,
-            nameColor: state.findModels.selectedColor.id,
-            monohromeModelsOnly: false
+            ...getTelegramUserData(),
+            NameGift: state.findModels.selectedGift,
+            NameColor: state.findModels.selectedColor.id,
+            MonohromeModelsOnly: true
         };
 
         console.log(`%c[API Request] Searching for models with POST to: ${url}`, 'color: dodgerblue');
@@ -621,8 +650,6 @@ const GIFT_NAME_TO_ID = {
              resultsGrid.innerHTML = `<p style="text-align: center;">Не удалось загрузить данные. ${error}</p>`;
         }
     }
-
-    // --- RENDERING ---
 
     function renderBackgroundResults(backgroundData) {
         resultsWrapper.classList.remove('results-initial-hide');
@@ -705,12 +732,10 @@ const GIFT_NAME_TO_ID = {
 
     }
 
-    // --- DROPDOWN LOGIC ---
-
     function populateDropdown(container, items, type) {
         container.innerHTML = '';
         const fragment = document.createDocumentFragment();
-        const PRELOAD_COUNT = 15; // Предзагружаем первые 15 картинок
+        const PRELOAD_COUNT = 15;
 
         items.forEach((item, index) => {
             const isPreload = index < PRELOAD_COUNT;
@@ -719,7 +744,6 @@ const GIFT_NAME_TO_ID = {
         });
         container.appendChild(fragment);
         
-        // Запускаем наблюдение за картинками, которые не были предзагружены
         const scrollRoot = container.closest('.dropdown-list');
         setupLazyLoading(container, scrollRoot, 'list');
     }
@@ -835,8 +859,6 @@ const GIFT_NAME_TO_ID = {
         populateDropdown(optionsContainer, itemsToDisplay, type);
     }
     
-    // --- IN-PAGE COLOR PICKER LOGIC ---
-
     function resetPickerAreaToPlaceholder() {
         pickerContainer.innerHTML = `
             <div class="picker-image-placeholder">
@@ -858,13 +880,11 @@ const GIFT_NAME_TO_ID = {
         
         if (!giftName || !modelName) return;
 
-        // Clear placeholder and prepare for real content
         pickerContainer.innerHTML = `
             <img id="pickerPreviewImage" src="" alt="Gift Preview" crossorigin="anonymous">
             <canvas id="pickerColorCanvas" class="hidden"></canvas>`;
-        pickerTargetColorsDisplay.innerHTML = ''; // Clear placeholder swatches
+        pickerTargetColorsDisplay.innerHTML = '';
         
-        // Re-acquire references to the newly created elements
         const pickerPreviewImg = document.getElementById('pickerPreviewImage');
         const pickerCanvas = document.getElementById('pickerColorCanvas');
         const pickerCtx = pickerCanvas.getContext('2d', { willReadFrequently: true });
@@ -916,7 +936,7 @@ const GIFT_NAME_TO_ID = {
     }
 
     function updatePickerTargetColorsDisplay() {
-        pickerTargetColorsDisplay.innerHTML = ''; // Clear old swatches
+        pickerTargetColorsDisplay.innerHTML = '';
         state.findBgs.targetColors.forEach(colorObj => {
             const swatch = document.createElement('div');
             swatch.className = 'color-swatch';
@@ -934,7 +954,6 @@ const GIFT_NAME_TO_ID = {
         const onMove = (clientX, clientY) => {
             if (!isDragging) return;
             
-            // Добавлено: сбрасываем таймер при любом движении
             clearTimeout(searchTimeout);
 
             const rect = container.getBoundingClientRect();
@@ -957,7 +976,6 @@ const GIFT_NAME_TO_ID = {
             isDragging = false;
             picker.classList.remove('dragging');
             
-            // Запускаем новый таймер только когда пользователь отпустил пипетку
             triggerDebouncedSearch();
         };
         
@@ -991,8 +1009,6 @@ const GIFT_NAME_TO_ID = {
     
     function triggerDebouncedSearch() {
         state.findBgs.lastResults = [];
-        // clearTimeout сбрасывает предыдущий таймер. 
-        // Если вы двигаете другую пипетку, новый отсчет начнется заново.
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(fetchMatchingBackgrounds, 800);
     }
@@ -1002,8 +1018,6 @@ const GIFT_NAME_TO_ID = {
             fetchMatchingModels();
         }
     }
-
-    // --- EVENT LISTENERS ---
     
     modeSwitcher.addEventListener('click', (e) => {
         const tab = e.target.closest('.mode-tab');
@@ -1038,7 +1052,6 @@ const GIFT_NAME_TO_ID = {
         dropdowns.giftBgs.input.value = '';
         dropdowns.giftBgs.header.classList.remove('value-active');
         
-        // Добавлено: сброс списка к полному состоянию
         populateDropdown(dropdowns.giftBgs.options, state.giftNames, 'gift');
 
         state.findBgs.selectedModel = null;
@@ -1063,7 +1076,6 @@ const GIFT_NAME_TO_ID = {
         dropdowns.modelBgs.input.value = '';
         dropdowns.modelBgs.header.classList.remove('value-active');
 
-        // Добавлено: сброс списка к полному состоянию
         populateDropdown(dropdowns.modelBgs.options, state.modelNames.map(m => m.name), 'model');
         
         displayMonocolorAlert(selectedValue);
@@ -1085,7 +1097,6 @@ const GIFT_NAME_TO_ID = {
         dropdowns.giftModels.input.value = '';
         dropdowns.giftModels.header.classList.remove('value-active');
 
-        // Добавлено: сброс списка к полному состоянию
         populateDropdown(dropdowns.giftModels.options, state.giftNames, 'gift');
 
         fetchAllModelNames(selectedValue, false);
@@ -1105,7 +1116,6 @@ const GIFT_NAME_TO_ID = {
         dropdowns.colorModels.input.value = '';
         dropdowns.colorModels.header.classList.remove('value-active');
 
-        // Добавлено: сброс списка к полному состоянию
         populateDropdown(dropdowns.colorModels.options, fixedColors, 'color');
 
         toggleDropdown(null, true);
@@ -1118,14 +1128,12 @@ const GIFT_NAME_TO_ID = {
         }
     });
 
-    // --- INITIALIZATION ---
     function init() {
         switchMode('findBgs');
         resetPickerAreaToPlaceholder();
         fetchAllGiftNames();
         populateDropdown(dropdowns.colorModels.options, fixedColors, 'color');
         
-        // ДОБАВИТЬ ЭТИ СТРОКИ
         modalCloseBtn.addEventListener('click', closeDetailsModal);
         detailsModalOverlay.addEventListener('click', (e) => {
             if (e.target === detailsModalOverlay) {
@@ -1136,4 +1144,3 @@ const GIFT_NAME_TO_ID = {
 
     init();
 });
-
