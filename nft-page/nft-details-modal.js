@@ -1,28 +1,18 @@
-// nft-details-modal.js
-
-// Константы для API
 const SERVER_BASE_URL = 'https://nftmatchbot20250730152328.azurewebsites.net/';
 const API_PHOTO_MODEL_URL = 'https://cdn.changes.tg/gifts/models'; 
 const API_SIMILAR_MODELS = '/api/MonoCoof/SimilarNFT'; 
 
-/**
- * Инициализирует и управляет модальным окном деталей NFT.
- * @returns {object} Функции управления модальным окном.
- */
 export function initNftDetailsModal() {
     
-    // Элементы модального окна
     const modalOverlay = document.getElementById('nftDetailsModalOverlay');
     const closeBtn = document.getElementById('closeNftDetailsModalBtn');
     
-    // Элементы в модалке
     const modalTitle = document.getElementById('nftDetailsModalTitle');
     const targetModelPhotoContainer = document.getElementById('targetModelPhoto'); 
     const selectedModelPhotoContainer = document.getElementById('selectedModelPhoto'); 
     const similarModelsList = document.getElementById('similarModelsList');
-    const listWrapper = document.getElementById('similarModelsListWrapper'); // Предполагаем, что этот ID добавлен на div-обертку
+    const listWrapper = document.getElementById('similarModelsListWrapper'); 
 
-    // Внутреннее состояние
     let currentSimilarModels = [];
     let selectedModelName = null; 
     
@@ -31,8 +21,6 @@ export function initNftDetailsModal() {
     let cardGiftName = '';
     let apiColors = [];
 
-    // --- УТИЛИТЫ ---
-    
     function formatPrice(price) {
         if (price === 0 || price === null || price === undefined) {
             return 'нет в продаже';
@@ -42,33 +30,24 @@ export function initNftDetailsModal() {
         return `<span class="price-value">${formattedPrice}</span> ${tonIcon}`;
     }
     
-    // 🚀 ФУНКЦИЯ ДЛЯ УПРАВЛЕНИЯ ГРАДИЕНТАМИ
     function updateScrollShadows() {
         if (!similarModelsList || !listWrapper) return;
         
         const isAtTop = similarModelsList.scrollTop === 0;
-        // Проверяем, достигнут ли конец списка (допуск 1px)
         const isAtBottom = similarModelsList.scrollHeight - similarModelsList.clientHeight <= similarModelsList.scrollTop + 1;
         
-        // Проверяем, есть ли вообще что скроллить
         const isScrollable = similarModelsList.scrollHeight > similarModelsList.clientHeight;
 
         listWrapper.classList.toggle('can-scroll-up', isScrollable && !isAtTop);
         listWrapper.classList.toggle('can-scroll-down', isScrollable && !isAtBottom);
 
-        // Если список не прокручивается, убедимся, что градиентов нет
         if (!isScrollable) {
             listWrapper.classList.remove('can-scroll-up', 'can-scroll-down');
         }
     }
     
-    /**
-     * Обновляет фотографии в двух квадратных окошках и заголовок.
-     */
     function updatePhotoContainers() {
-        //modalTitle.textContent = targetGiftName || 'Подарок';
 
-        // 1. ПРАВОЕ ОКОШКО: Целевая модель (с главной страницы).
         if (targetModelName && targetGiftName) {
             const targetUrl = `${API_PHOTO_MODEL_URL}/${encodeURIComponent(targetGiftName)}/png/${encodeURIComponent(targetModelName)}.png`;
             targetModelPhotoContainer.innerHTML = `<img src="${targetUrl}" alt="${targetModelName}" class="model-photo">`;
@@ -76,7 +55,6 @@ export function initNftDetailsModal() {
             targetModelPhotoContainer.innerHTML = '<p class="placeholder-text">Нет целевой модели</p>';
         }
         
-        // 2. ЛЕВОЕ ОКОШКО: Выбранная модель из списка прокрутки 
         const displayModelName = selectedModelName || (currentSimilarModels.length > 0 ? currentSimilarModels[0].name : null);
         
         if (displayModelName && cardGiftName) {
@@ -87,16 +65,13 @@ export function initNftDetailsModal() {
         }
     }
     
-    /**
-     * Генерирует и отображает список похожих моделей.
-     */
     function renderSimilarModelsList() {
         similarModelsList.innerHTML = '';
         
         if (currentSimilarModels.length === 0) {
             similarModelsList.innerHTML = '<p class="list-placeholder">Не удалось загрузить похожие модели для данного подарка.</p>';
             updatePhotoContainers();
-            updateScrollShadows(); // Обновляем тени (должны исчезнуть)
+            updateScrollShadows(); 
             return;
         }
 
@@ -149,26 +124,77 @@ export function initNftDetailsModal() {
         
         updatePhotoContainers();
         
-        // 🚀 ФИНАЛЬНЫЙ ВЫЗОВ: Обновляем тени после рендера, с небольшой задержкой, 
-        // чтобы браузер успел посчитать scrollHeight
         setTimeout(updateScrollShadows, 50);
     }
 
-    /**
-     * Загружает список похожих моделей с API.
-     */
     async function fetchSimilarModels() {
         similarModelsList.innerHTML = '<div class="list-loading"><span class="spinner-small"></span> Загрузка моделей...</div>';
         
         try {
+            
+            const getTelegramUserData = () => {
+                let masterUserData = null;
+                try {
+                    const cachedUserData = sessionStorage.getItem('tgUser');
+                    if (cachedUserData) {
+                        console.log("User data LOADED from sessionStorage:", cachedUserData);
+                        masterUserData = JSON.parse(cachedUserData); 
+                    }
+                } catch (e) {
+                    console.error('Failed to parse user data from sessionStorage:', e);
+                }
+
+                if (!masterUserData) {
+                    console.log("No user data in sessionStorage. Trying direct access (fallback)...");
+                    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+
+                    if (tgUser) {
+                        console.log("Telegram user data found directly (fallback):", tgUser);
+                        masterUserData = { 
+                            telegramId: tgUser.id, 
+                            username: tgUser.username || null,
+                        };
+                        
+                        try {
+                            const dataToSave = {
+                                 ...masterUserData,
+                                 telegramId: parseInt(tgUser.id, 10) 
+                            };
+                            sessionStorage.setItem('tgUser', JSON.stringify(dataToSave));
+                        } catch (e) { } 
+                    }
+                }
+                
+                if (masterUserData) {
+                    let numericId = null;
+                    if (masterUserData.telegramId !== null && masterUserData.telegramId !== undefined) {
+                         numericId = parseInt(masterUserData.telegramId, 10);
+                         if (isNaN(numericId)) { 
+                             numericId = null; 
+                             console.warn("Parsed telegramId is NaN, setting id to null.");
+                         }
+                    }
+                    return {
+                        id: numericId, 
+                        Username: masterUserData.username 
+                    };
+                }
+
+                console.log("User data not found. Sending null in {id, Username} format.");
+                return { id: null, Username: null }; 
+            };
+
+            const userData = getTelegramUserData();
+
             const requestBody = {
+                ...userData, 
                 "Colors": apiColors, 
                 "NameTargetGift": null,
                 "NameTargetModel": null,
                 "NameGift": cardGiftName, 
                 "MonohromeModelsOnly": true 
             };
-
+            
              console.log(requestBody);
             
             const response = await fetch(`${SERVER_BASE_URL}${API_SIMILAR_MODELS}`, {
@@ -200,15 +226,10 @@ export function initNftDetailsModal() {
             console.error('Ошибка при загрузке похожих моделей:', error);
             similarModelsList.innerHTML = `<p class="list-placeholder">Ошибка загрузки: ${error.message}</p>`;
             updatePhotoContainers(); 
-            updateScrollShadows(); // Обновляем тени при ошибке
+            updateScrollShadows(); 
         }
     }
 
-    // --- ОСНОВНЫЕ ФУНКЦИИ МОДУЛЯ ---
-    
-    /**
-     * Открывает модальное окно.
-     */
     function openNftDetailsModal(giftNameFromCard, targetGiftNameFromMain, targetModelNameFromMain, colors) {
         if (!giftNameFromCard || !targetGiftNameFromMain || !targetModelNameFromMain) {
              console.error("Не все необходимые данные указаны для модального окна.");
@@ -228,32 +249,25 @@ export function initNftDetailsModal() {
         modalOverlay.classList.remove('hidden');
         document.body.style.overflow = 'hidden'; 
         
-        // 🚀 Добавляем обработчик скролла
         if (similarModelsList) {
              similarModelsList.addEventListener('scroll', updateScrollShadows);
         }
         
-        updateScrollShadows(); // Начальная проверка
+        updateScrollShadows(); 
         updatePhotoContainers(); 
         
         fetchSimilarModels();
     }
     
-    /**
-     * Закрывает модальное окно.
-     */
     function closeNftDetailsModal() {
         modalOverlay.classList.add('hidden');
         document.body.style.overflow = ''; 
         
-        // 🚀 Удаляем обработчик скролла
         if (similarModelsList) {
             similarModelsList.removeEventListener('scroll', updateScrollShadows);
         }
     }
 
-    // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
-    
     if (closeBtn) {
         closeBtn.addEventListener('click', closeNftDetailsModal);
     }
