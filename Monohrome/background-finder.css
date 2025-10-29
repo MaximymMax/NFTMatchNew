@@ -799,12 +799,13 @@ main {
 }
 
 .info-value {
-    color: var(--text-primary); /* Белый цвет для значения */
-    font-weight: 400; /* Обычный шрифт для значения */
+    color: var(--text-primary);
+    font-weight: 400;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex-grow: 1; /* ⬅️ ДОБАВЬ ЭТУ СТРОКУ */
 }
 
 .info-value.compat {
@@ -827,4 +828,70 @@ main {
 .option-image.loaded, .model-image.loaded {
     /* Плавное появление после загрузки */
     opacity: 1;
+}
+
+.modal-context-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem; 
+    flex-shrink: 0;
+    margin-left: 0.75rem;
+    padding: 0.4rem 0.5rem; /* Твои паддинги, которые создают проблему */
+    
+    background-color: var(--primary-muted);
+    color: var(--text-primary);
+    border-radius: 0.5rem; 
+    text-decoration: none;
+    transition: background-color 0.2s, transform 0.2s;
+    
+    font-size: 0.7rem; 
+    font-weight: 600;
+
+    /* ⬇️ ДОБАВЬ ЭТИ ДВЕ СТРОКИ ⬇️ */
+    margin-top: -0.4rem;
+    margin-bottom: -0.4rem;
+    /* ⬆️ КОНЕЦ ⬆️ */
+}
+
+.modal-context-button:hover {
+    background-color: var(--primary-hover);
+    transform: scale(1.05);
+}
+
+.modal-context-button svg {
+    width: 16px; /* Чуть поменьше иконка */
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.info-value.count {
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 600; /* Жирный, как и проценты */
+}
+
+/* Состояние ошибки для счетчика */
+.info-value.count-error {
+    color: #f87171; /* Красный цвет */
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Маленький спиннер для загрузки счетчика */
+.loading-spinner-mini {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--primary-muted);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+}
+
+/* Анимация spin уже должна быть определена, но на всякий случай: */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
