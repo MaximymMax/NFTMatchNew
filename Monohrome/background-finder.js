@@ -266,6 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalModelName = document.getElementById('modal-model-name');
     const modalBgName = document.getElementById('modal-bg-name');
     const modalCompatValue = document.getElementById('modal-compat-value');
+    const modalGiftCount = document.getElementById('modal-gift-count');
     
     const dropdowns = {
         giftBgs: {
@@ -317,11 +318,52 @@ document.addEventListener('DOMContentLoaded', () => {
         modalModelName.textContent = data.modelName;
         modalBgName.textContent = data.bgName;
         modalCompatValue.textContent = `${data.compatValue}%`;
+        
+        // ✅ НОВАЯ ЛОГИКА: Сразу устанавливаем значение (или ошибку)
+        modalGiftCount.classList.remove('count-error');
+        if (data.count !== null && data.count !== undefined) {
+            modalGiftCount.textContent = data.count; // Показываем счетчик
+        } else if (data.count === null) {
+            // Сервер вернул null (явная ошибка или 0)
+            modalGiftCount.textContent = '0';
+            console.warn('Count for this item was null.');
+        } else {
+            // data.count === undefined (ошибка при запросе списка)
+            modalGiftCount.textContent = 'Ошибка'; 
+            modalGiftCount.classList.add('count-error');
+        }
+
+        // --- Логика для кнопок (без изменений) ---
+        const linkFindBgs = document.getElementById('modal-link-find-bgs');
+        const linkFindModels = document.getElementById('modal-link-find-models');
+        const searchIcon = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607z" /></svg>';
+        const gift = encodeURIComponent(data.giftName);
+        const model = encodeURIComponent(data.modelName);
+        const color = encodeURIComponent(data.bgName); 
+
+        if (state.currentMode === 'findBgs') {
+            const linkUrl = `?mode=findModels&gift=${gift}&color=${color}`;
+            linkFindModels.href = linkUrl;
+            linkFindModels.innerHTML = `${searchIcon} <span>Лучшие модели</span>`; 
+            linkFindModels.classList.remove('hidden');
+        
+        } else if (state.currentMode === 'findModels') {
+            const linkUrl = `?mode=findBgs&gift=${gift}&model=${model}`;
+            linkFindBgs.href = linkUrl;
+            linkFindBgs.innerHTML = `${searchIcon} <span>Лучшие фоны</span>`; 
+            linkFindBgs.classList.remove('hidden');
+        }
+        // --- Конец логики для кнопок ---
+        
+        // Показываем модальное окно в самом конце
         detailsModalOverlay.classList.remove('hidden');
     }
 
     function closeDetailsModal() {
         detailsModalOverlay.classList.add('hidden');
+        // Прячем обе кнопки, чтобы они не "моргали"
+        document.getElementById('modal-link-find-bgs').classList.add('hidden'); 
+        document.getElementById('modal-link-find-models').classList.add('hidden'); 
     }
 
     function switchMode(mode) {
@@ -494,14 +536,17 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(url);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const modelsDict = await response.json();
             
-            state.modelNames = Object.entries(modelsDict).map(([name, isMonochrome]) => ({ name, isMonochrome }));
+            // ✅ НОВАЯ ЛОГИКА: Сервер сразу возвращает массив объектов
+            const modelsList = await response.json();
+            
+            // ✅ НОВАЯ ЛОГИКА: Сохраняем массив объектов напрямую
+            state.modelNames = modelsList; 
             console.log(`%c[API Success] Loaded models for "${giftName}":`, 'color: green', state.modelNames);
 
             if (updateDOM) {
-                const modelNamesList = state.modelNames.map(m => m.name);
-                populateDropdown(dropdowns.modelBgs.options, modelNamesList, 'model');
+                // ✅ НОВАЯ ЛОГИКА: Передаем в populateDropdown полный массив объектов
+                populateDropdown(dropdowns.modelBgs.options, state.modelNames, 'model');
             }
 
         } catch (error) {
@@ -593,9 +638,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 return foundColor ? { ...foundColor, compatValue: item.Value } : null;
             }).filter(Boolean);
             
-            state.findBgs.lastResults = enrichedBgs;
+            const resultsWithCounts = await fetchGiftCounts(enrichedBgs, state.findBgs.selectedGift, 'findBgs');
+            
+            state.findBgs.lastResults = resultsWithCounts; // Сохраняем обогащенные данные
             hideLoading();
-            renderBackgroundResults(enrichedBgs);
+            renderBackgroundResults(resultsWithCounts);
 
         } catch (error) {
             console.error('[API Error] Ошибка при поиске фонов:', error);
@@ -640,9 +687,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 isMonohrome: item.IsMonohrome,
             }));
             
-            state.findModels.lastResults = modelsToRender;
+            const resultsWithCounts = await fetchGiftCounts(modelsToRender, state.findModels.selectedGift, 'findModels');
+
+            state.findModels.lastResults = resultsWithCounts; // Сохраняем обогащенные данные
             hideLoading();
-            renderModelResults(modelsToRender, state.findModels.selectedColor);
+            renderModelResults(resultsWithCounts, state.findModels.selectedColor);
 
         } catch(error) {
              console.error('[API Error] Ошибка при поиске моделей:', error);
@@ -682,13 +731,80 @@ document.addEventListener('DOMContentLoaded', () => {
                     giftName: state.findBgs.selectedGift,
                     modelName: state.findBgs.selectedModel,
                     bgName: bg.name,
-                    compatValue: compatValue
+                    compatValue: compatValue,
+                    count: bg.count // ⬅️ ДОБАВЛЯЕМ СЧЕТЧИК
                 });
             });
             fragment.appendChild(card);
         });
         resultsGrid.appendChild(fragment);
         setupLazyLoading(resultsGrid, null, 'grid');
+    }
+
+    async function fetchGiftCounts(results, giftName, mode) {
+        // 1. Создаем тело запроса
+        let requestBody = [];
+        if (mode === 'findBgs') {
+            const modelName = state.findBgs.selectedModel;
+            requestBody = results.map(bg => ({
+                NameGift: giftName,
+                NameModel: modelName,
+                BackgroundName: bg.id // bg.id - это ID цвета, например "Amber"
+            }));
+        } else if (mode === 'findModels') {
+            const bgName = state.findModels.selectedColor.id;
+            requestBody = results.map(model => ({
+                NameGift: giftName,
+                NameModel: model.modelName,
+                BackgroundName: bgName
+            }));
+        }
+
+        if (requestBody.length === 0) return results; // Ничего не запрашиваем
+
+        // 2. Выполняем запрос
+        const countApiUrl = `${SERVER_BASE_URL}/api/BaseInfo/GetCountsForModelsAndBackgrounds`;
+        console.log(`%c[API Request] Fetching counts for ${results.length} items...`, 'color: dodgerblue', requestBody);
+        
+        try {
+            const response = await fetch(countApiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody),
+            });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            
+            const countsData = await response.json(); // Ожидаем массив [GiftCountResponse]
+            console.log('%c[API Success] Received gift counts:', 'color: green', countsData);
+
+            // 3. Объединяем данные
+            // Создаем Map для быстрого поиска
+            const countMap = new Map();
+            if (mode === 'findBgs') {
+                // Ключ = BackgroundName
+                countsData.forEach(item => countMap.set(item.BackgroundName, item.Count));
+                // Обогащаем исходный массив
+                results.forEach(bg => {
+                    bg.count = countMap.has(bg.id) ? countMap.get(bg.id) : null;
+                });
+            } else if (mode === 'findModels') {
+                // Ключ = NameModel
+                countsData.forEach(item => countMap.set(item.NameModel, item.Count));
+                // Обогащаем исходный массив
+                results.forEach(model => {
+                    model.count = countMap.has(model.modelName) ? countMap.get(model.modelName) : null;
+                });
+            }
+            
+            return results; // Возвращаем обогащенный массив
+
+        } catch (error) {
+            console.error('[API Error] Ошибка при загрузке количества:', error);
+            // Возвращаем исходный массив, чтобы хотя бы что-то показать
+            // (count будет undefined, что в openDetailsModal обработается как "Ошибка")
+            return results; 
+        }
     }
 
     function renderModelResults(modelData, backgroundColor) {
@@ -722,7 +838,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     giftName: model.giftName,
                     modelName: model.modelName,
                     bgName: backgroundColor.name,
-                    compatValue: compatValue
+                    compatValue: compatValue,
+                    count: model.count // ⬅️ ДОБАВЛЯЕМ СЧЕТЧИК
                 });
             });
             fragment.appendChild(card);
@@ -766,21 +883,23 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         if (type === 'gift') {
-            name = item;
+            name = item; // item - это строка "Santa Hat"
             const giftId = GIFT_NAME_TO_ID[name];
             if (giftId) {
                 const imageUrl = `${API_GIFT_ORIGINALS_URL}/${giftId}/Original.png`;
                 imageHtml = generateImageTag(imageUrl, name);
             }
         } else if (type === 'model') {
-            name = item;
+            // ✅ НОВАЯ ЛОГИКА: item - это объект { NameModel: "...", IsMonochrome: ..., Themes: ... }
+            name = item.NameModel; 
             const giftName = state.currentMode === 'findBgs' ? state.findBgs.selectedGift : state.findModels.selectedGift;
             if (giftName) {
                 const imageUrl = `${API_PHOTO_URL}/${encodeURIComponent(giftName)}/png/${encodeURIComponent(name)}.png`;
                 imageHtml = generateImageTag(imageUrl, name);
             }
-            const modelData = state.modelNames.find(m => m.name === name);
-            if (modelData && modelData.isMonochrome === false) {
+            
+            // ✅ НОВАЯ ЛОГИКА: Берем IsMonochrome напрямую из объекта item
+            if (item.IsMonochrome === false) { 
                 statusHtml = `
                     <div class="monocolor-indicator">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -789,13 +908,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>`;
             }
         } else if (type === 'color') {
-            name = item.name;
+            name = item.name; // item - это { id: "...", name: "...", ... }
             imageHtml = `<div class="color-swatch-mini" style="background: ${item.gradient};"></div>`;
             option.classList.add('color-option');
         }
 
         option.innerHTML = `${imageHtml}<span class="option-text">${name}</span>${statusHtml}`;
-        option.dataset.value = (type === 'color') ? item.id : name;
+        option.dataset.value = (type === 'color') ? item.id : name; // data-value всегда строка (имя или id)
         return option;
     }
 
@@ -807,9 +926,10 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.innerHTML = '';
             return;
         }
-
-        const modelData = state.modelNames.find(m => m.name === modelName);
-        if (modelData && modelData.isMonochrome === false) {
+        
+        // ✅ НОВАЯ ЛОГИКА: Ищем в массиве объектов по полю NameModel
+        const modelData = state.modelNames.find(m => m.NameModel === modelName);
+        if (modelData && modelData.IsMonochrome === false) {
             wrapper.innerHTML = `
                 <div class="monocolor-alert">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -851,12 +971,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function filterDropdown(input, optionsContainer, items, type) {
         const searchText = input.value.toLowerCase();
+        
         const filtered = items.filter(item => {
-            const name = (type === 'color') ? item.name : (type === 'model') ? item.name : item;
+            let name = '';
+            if (type === 'color') name = item.name;
+            else if (type === 'model') name = item.NameModel; // ✅ НОВАЯ ЛОГИКА
+            else name = item; // для 'gift' (это просто строка)
+            
             return name.toLowerCase().includes(searchText);
         });
-        const itemsToDisplay = (type === 'model') ? filtered.map(m => m.name) : filtered;
-        populateDropdown(optionsContainer, itemsToDisplay, type);
+        
+        // Передаем отфильтрованный массив (объектов или строк)
+        populateDropdown(optionsContainer, filtered, type);
     }
     
     function resetPickerAreaToPlaceholder() {
@@ -1076,7 +1202,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dropdowns.modelBgs.input.value = '';
         dropdowns.modelBgs.header.classList.remove('value-active');
 
-        populateDropdown(dropdowns.modelBgs.options, state.modelNames.map(m => m.name), 'model');
+        populateDropdown(dropdowns.modelBgs.options, state.modelNames, 'model');
         
         displayMonocolorAlert(selectedValue);
         
@@ -1128,18 +1254,104 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function init() {
-        switchMode('findBgs');
+    // НОВАЯ ФУНКЦИЯ ДЛЯ ЧТЕНИЯ ПАРАМЕТРОВ ИЗ ССЫЛКИ
+async function applyUrlParameters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramMode = urlParams.get('mode');
+    const paramGift = urlParams.get('gift');
+    const paramColor = urlParams.get('color'); // Имя или ID цвета, например "Amber"
+    const paramModel = urlParams.get('model'); // Имя модели, например "Red"
+
+    // Если нет параметра mode, ничего не делаем
+    if (!paramMode) return; 
+
+    console.log(`https://www.merriam-webster.com/dictionary/parameter Найдены параметры: mode=${paramMode}, gift=${paramGift}, color=${paramColor}, model=${paramModel}`);
+
+    // 1. Устанавливаем режим
+    if (paramMode === 'findModels' || paramMode === 'findBgs') {
+        switchMode(paramMode);
+    }
+
+    // 2. Логика для режима "Поиск моделей" (твой пример)
+    if (state.currentMode === 'findModels' && paramGift && paramColor) {
+        
+        // 2a. Применяем подарок (проверяем, что он есть в загруженном списке)
+        if (state.giftNames.includes(paramGift)) {
+            state.findModels.selectedGift = paramGift;
+            dropdowns.giftModels.value.textContent = paramGift;
+            // Ждем, пока загрузятся модели для этого подарка
+            await fetchAllModelNames(paramGift, false); 
+        } else {
+            console.warn(`https://www.merriam-webster.com/dictionary/parameter Подарок "${paramGift}" не найден в списке.`);
+            return;
+        }
+
+        // 2b. Применяем цвет (ищем в списке fixedColors по ID или имени)
+        const colorData = fixedColors.find(c => c.id.toLowerCase() === paramColor.toLowerCase() || c.name.toLowerCase() === paramColor.toLowerCase());
+        if (colorData) {
+            state.findModels.selectedColor = colorData;
+            dropdowns.colorModels.value.textContent = colorData.name;
+        } else {
+            console.warn(`https://www.merriam-webster.com/dictionary/parameter Цвет "${paramColor}" не найден.`);
+            return;
+        }
+
+        // 2c. Запускаем поиск
+        console.log("https://www.merriam-webster.com/dictionary/parameter Запускаем поиск моделей...");
+        triggerModelSearchIfReady();
+    }
+    // 3. Логика для режима "Поиск фонов" (добавил на всякий случай)
+    else if (state.currentMode === 'findBgs' && paramGift && paramModel) {
+        
+        // 3a. Применяем подарок
+        if (state.giftNames.includes(paramGift)) {
+            state.findBgs.selectedGift = paramGift;
+            dropdowns.giftBgs.value.textContent = paramGift;
+            // Ждем загрузки моделей
+            await fetchAllModelNames(paramGift, true); 
+        } else {
+            console.warn(`https://www.merriam-webster.com/dictionary/parameter Подарок "${paramGift}" не найден.`);
+            return;
+        }
+
+        // 3b. Применяем модель
+        const modelData = state.modelNames.find(m => m.NameModel.toLowerCase() === paramModel.toLowerCase()); // ✅ НОВАЯ ЛОГИКА
+        if (modelData) {
+            state.findBgs.selectedModel = modelData.NameModel;
+            dropdowns.modelBgs.value.textContent = modelData.NameModel;
+            
+            // 3c. Запускаем пикер и поиск
+            console.log("https://www.merriam-webster.com/dictionary/parameter Запускаем поиск фонов...");
+            displayMonocolorAlert(modelData.NameModel);
+            setupInPageColorPicker(); // Эта функция сама запустит поиск
+        } else {
+            console.warn(`https://www.merriam-webster.com/dictionary/parameter Модель "${paramModel}" не найдена в "${paramGift}".`);
+        }
+    }
+}
+
+    async function init() {
+        switchMode('findBgs'); // 1. Устанавливаем режим по умолчанию
         resetPickerAreaToPlaceholder();
-        fetchAllGiftNames();
+        
+        // 2. Синхронно заполняем цвета
         populateDropdown(dropdowns.colorModels.options, fixedColors, 'color');
         
+        // 3. АСИНХРОННО ждем загрузки названий подарков
+        //    (Это важно, чтобы мы могли проверить, существует ли подарок из ссылки)
+        await fetchAllGiftNames(); 
+
+        // 4. Добавляем слушатели для модального окна
         modalCloseBtn.addEventListener('click', closeDetailsModal);
         detailsModalOverlay.addEventListener('click', (e) => {
             if (e.target === detailsModalOverlay) {
                 closeDetailsModal();
             }
         });
+
+        // 5. (НОВОЕ) Вызываем нашу функцию для применения параметров из URL
+        //    Она сработает только ПОСЛЕ того, как fetchAllGiftNames() завершится
+        await applyUrlParameters();
     }
 
     init();
