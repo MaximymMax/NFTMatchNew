@@ -1316,16 +1316,23 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`${SERVER_BASE_URL}/api/ListGifts/${encodeURIComponent(giftName)}/AllModelNames`);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const modelsDict = await response.json();
-            console.log(modelsDict);
             
-            modelNames = Object.entries(modelsDict).map(([name, isMonochrome]) => ({
-                name: name, 
-                isMonochrome: isMonochrome
+            // ✅ ИЗМЕНЕНИЕ 1: Сервер возвращает массив (List), а не словарь (Dict)
+            const modelsList = await response.json(); 
+            console.log(modelsList);
+            
+            // ✅ ИЗМЕНЕНИЕ 2: Адаптируем новый формат [ { NameModel: ..., IsMonochrome: ... } ] 
+            // к тому, который ожидает твой остальной код ( { name: ..., isMonochrome: ... } )
+            modelNames = modelsList.map(item => ({
+                name: item.NameModel, 
+                isMonochrome: item.IsMonochrome
             }));
             
             console.log(`Получены модели для ${giftName}:`, modelNames);
+            
+            // Эта строка остается без изменений, т.к. modelNames.map(m => m.name) по-прежнему вернет массив имен
             populateDropdown(modelListOptions, modelNames.map(m => m.name), 'model'); 
+
         } catch (error) {
             console.error(`Ошибка при загрузке моделей для ${giftName}:`, error);
             modelNames = [];
