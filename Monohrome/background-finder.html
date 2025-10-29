@@ -6,7 +6,6 @@
     <title>BACKGROUND SELECTION</title>
     <link rel="stylesheet" href="./background-finder.css">
     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
 
@@ -113,17 +112,27 @@
                 <div class="modal-photo-container">
                     </div>
                 <div class="modal-info">
-                    <div class="info-row">
-                        <span class="info-label">Модель:</span>
-                        <span id="modal-model-name" class="info-value"></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Фон:</span>
-                        <span id="modal-bg-name" class="info-value"></span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Совпадение:</span>
-                        <span id="modal-compat-value" class="info-value compat"></span>
+                        <div class="info-row">
+                            <span class="info-label">Модель:</span>
+                            <span id="modal-model-name" class="info-value"></span>
+                            <a id="modal-link-find-bgs" class="modal-context-button hidden" href="#" title="Найти лучшие фоны для этой модели">
+                            </a>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Фон:</span>
+                            <span id="modal-bg-name" class="info-value"></span>
+                            <a id="modal-link-find-models" class="modal-context-button hidden" href="#" title="Найти лучшие модели для этого фона">
+                            </a>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Совпадение:</span>
+                            <span id="modal-compat-value" class="info-value compat"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Количество:</span>
+                            <span id="modal-gift-count" class="info-value count"></span>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -133,5 +142,3 @@
     <script type="module" src="./background-finder.js"></script> 
 </body>
 </html>
-
-
