@@ -3,10 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const SERVER_BASE_URL = 'https://nftmatchbot20250730152328.azurewebsites.net';
     const CACHE_KEY = 'giftNamesCache';
-    const TG_USER_KEY = 'tgUser'; // Используем константу
-
-    const tgGateOverlay = document.getElementById('tg-gate-overlay');
-    const body = document.body;
+    const TG_USER_KEY = 'tgUser'; 
 
     const preloadGiftNames = async () => {
         try {
@@ -35,18 +32,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     //
-    // --- НОВАЯ ЛОГИКА ЗАПУСКА ---
+    // --- ОБНОВЛЕННАЯ ЛОГИКА ЗАПУСКА ---
     //
     const initializeApp = () => {
     
         // 1. СНАЧАЛА сообщаем Telegram, что мы готовы.
-        // Это делает initDataUnsafe доступным.
         if (window.Telegram && window.Telegram.WebApp) {
             console.log('Signaling Telegram: WebApp is ready.');
             window.Telegram.WebApp.ready();
         }
 
-        // 2. ТЕПЕРЬ проверяем initData, он должен быть доступен
+        // 2. ТЕПЕРЬ проверяем initData
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
             
             console.log('Running inside Telegram WebApp. Initializing app...');
@@ -58,21 +54,52 @@ document.addEventListener('DOMContentLoaded', () => {
             if (startParam) {
                 console.log("Найден start_param на главной странице:", startParam);
                 
-                // Проверяем, для какого инструмента эта ссылка
-                if (startParam.startsWith('findModels_') || startParam.startsWith('findBgs_')) {
-                    
-                    // Это ссылка для твоего background-finder.
-                    // Немедленно перенаправляем на него.
-                    console.log("Перенаправление на /Monohrome/background-finder.html");
-                    
-                    window.location.href = './Monohrome/background-finder.html';
-                    
-                    // ВАЖНО: Завершаем выполнение функции,
-                    // чтобы не выполнять preloadGiftNames и т.д.
-                    return; 
+                //
+                // --- НАЧАЛО ИЗМЕНЕНИЙ ---
+                //
+                try {
+                    const parts = startParam.split('_');
+                    const restoreSpaces = (str) => str.replace(/-/g, ' ');
+                    let newParams = new URLSearchParams(); // Создаем объект для ?=...
+                    let targetPage = null;
+
+                    // Разбираем startParam "findModels_Santa-Hat_Amber"
+                    if (parts.length >= 3 && (parts[0] === 'findModels' || parts[0] === 'findBgs')) {
+                        const paramMode = parts[0];
+                        const paramGift = restoreSpaces(parts[1]);
+                        
+                        newParams.set('mode', paramMode);
+                        newParams.set('gift', paramGift);
+
+                        if (paramMode === 'findModels') {
+                            const paramColor = restoreSpaces(parts[2]);
+                            newParams.set('color', paramColor);
+                            targetPage = './Monohrome/background-finder.html';
+                        } else if (paramMode === 'findBgs') {
+                            const paramModel = restoreSpaces(parts[2]);
+                            newParams.set('model', paramModel);
+                            targetPage = './Monohrome/background-finder.html';
+                        }
+                    }
+
+                    if (targetPage) {
+                        // Собираем новую ссылку: ./Monohrome/background-finder.html?mode=findModels&gift=Santa Hat&color=Amber
+                        const newUrl = `${targetPage}?${newParams.toString()}`;
+                        console.log(`Перенаправление: ${startParam} -> ${newUrl}`);
+                        
+                        // Немедленно перенаправляем на нужную страницу с НОВЫМИ параметрами
+                        window.location.href = newUrl;
+                        
+                        // ВАЖНО: Завершаем выполнение функции, чтобы не грузить главную
+                        return;
+                    } else {
+                         console.warn("Не удалось разобрать start_param:", startParam);
+                    }
+
+                } catch (e) {
+                    console.error("Ошибка разбора start_param:", e);
                 }
-                
-                // Сюда можно будет добавить `else if` для других ссылок
+                // --- КОНЕЦ ИЗМЕНЕНИЙ ---
             }
             // --- КОНЕЦ РОУТЕРА ---
 
@@ -101,7 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // 4b. Если мы НЕ в Telegram, сохраняем фейковые данные
             console.log('Not in Telegram WebApp. Saving FAKE user data for testing.');
             try {
-                 // Проверяем, чтобы не перезаписать, если уже есть
                 if (!sessionStorage.getItem(TG_USER_KEY)) {
                     const testUserData = {
                         telegramId: 7593322, 
