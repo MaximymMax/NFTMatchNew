@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const CACHE_KEY = 'giftNamesCache';
     const TG_USER_KEY = 'tgUser';
 
-    // 1. Функция сохранения данных пользователя
+    // 1. Функция сохранения данных пользователя И ПРОВЕРКИ РЕДИРЕКТА
     const saveUserData = () => {
         // Сначала сообщаем Telegram, что мы готовы
         if (window.Telegram && window.Telegram.WebApp) {
@@ -18,6 +18,34 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log('Running inside Telegram WebApp. Initializing app...');
             try {
+                
+                // --- НАЧАЛО ИЗМЕНЕНИЙ: "РОУТЕР" ---
+                const startParam = window.Telegram.WebApp.initDataUnsafe.start_param;
+                
+                if (startParam) {
+                    console.log("Найден start_param на главной странице:", startParam);
+                    
+                    // Проверяем, для какого инструмента эта ссылка
+                    if (startParam.startsWith('findModels_') || startParam.startsWith('findBgs_')) {
+                        
+                        // Это ссылка для твоего background-finder.
+                        // Немедленно перенаправляем на него.
+                        console.log("Перенаправление на /Monohrome/background-finder.html");
+                        
+                        // Мы просто переходим на нужный HTML.
+                        // `background-finder.js` (на той странице) сам
+                        // прочитает start_param и все настроит.
+                        window.location.href = './Monohrome/background-finder.html';
+                        
+                        // Возвращаем false, чтобы остановить 
+                        // выполнение дальнейшего кода (например, preloadGiftNames)
+                        return false; 
+                    }
+                    // Сюда можно будет добавить `else if` для других ссылок
+                }
+                // --- КОНЕЦ ИЗМЕНЕНИЙ ---
+
+
                 const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
                 
                 if (tgUser && tgUser.id) {
@@ -57,6 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Failed to save FAKE user data to sessionStorage:', e);
             }
         }
+        
+        // Если редиректа не было, возвращаем true
+        return true;
     };
 
     // 2. Функция предзагрузки названий (убираем из нее .ready())
@@ -87,9 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Запуск ---
-    // Сначала сохраняем данные пользователя (это вызовет .ready())
-    saveUserData();
+    // Сначала сохраняем данные и ПРОВЕРЯЕМ, нужен ли редирект
+    const shouldContinue = saveUserData();
     
-    // Сразу же запускаем предзагрузку гифтов (не ждем saveUserData)
-    preloadGiftNames();
+    // Если shouldContinue = true (редиректа нет), то запускаем предзагрузку
+    if (shouldContinue) {
+        preloadGiftNames();
+    }
 });
