@@ -1264,43 +1264,11 @@ document.addEventListener('DOMContentLoaded', () => {
         let paramColor = urlParams.get('color');
         let paramModel = urlParams.get('model');
     
-        // --- НОВЫЙ БЛОК ---
-        // Проверяем, был ли запуск по "реферальной" ссылке (startapp)
-        const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+        //
+        // --- УДАЛИЛИ БЛОК ПРОВЕРКИ startParam ---
+        //
     
-        if (startParam) {
-            console.log("Найден start_param:", startParam);
-            try {
-                // Пытаемся разобрать строку формата "mode_gift_color" или "mode_gift_model"
-                // Например: "findModels_Santa-Hat_Amber"
-                const parts = startParam.split('_');
-                
-                // Восстанавливаем пробелы из дефисов
-                const restoreSpaces = (str) => str.replace(/-/g, ' ');
-    
-                if (parts.length >= 3) {
-                    paramMode = parts[0]; // findModels
-                    paramGift = restoreSpaces(parts[1]); // Santa Hat
-                    
-                    if (paramMode === 'findModels') {
-                        paramColor = restoreSpaces(parts[2]); // Amber
-                    } else if (paramMode === 'findBgs') {
-                        paramModel = restoreSpaces(parts[2]); // Red
-                    }
-                } else if (parts.length === 2 && parts[0] === 'findBgs') {
-                    // Особый случай, если нужен только режим и подарок (например)
-                    paramMode = parts[0];
-                    paramGift = restoreSpaces(parts[1]);
-                }
-    
-            } catch (e) {
-                console.error("Ошибка разбора start_param:", e);
-            }
-        }
-        // --- КОНЕЦ НОВОГО БЛОКА ---
-    
-    
-        // Если нет параметра mode (ни из URL, ни из start_param), ничего не делаем
+        // Если нет параметра mode, ничего не делаем
         if (!paramMode) return; 
     
         console.log(`Применяем параметры: mode=${paramMode}, gift=${paramGift}, color=${paramColor}, model=${paramModel}`);
@@ -1367,6 +1335,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
     
             // 3b. Применяем модель
+            // ✅ ИСПРАВЛЕНИЕ: Ждем, пока state.modelNames будет заполнен
+            if (state.modelNames.length === 0) {
+                 console.warn("Модели еще не загружены, ждем...");
+                 await fetchAllModelNames(paramGift, true); // Принудительно ждем загрузки
+            }
+            
             const modelData = state.modelNames.find(m => m.NameModel.toLowerCase() === paramModel.toLowerCase());
             if (modelData) {
                 state.findBgs.selectedModel = modelData.NameModel;
@@ -1378,6 +1352,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setupInPageColorPicker();
             } else {
                 console.warn(`Модель "${paramModel}" не найдена в "${paramGift}".`);
+                console.log('Доступные модели:', state.modelNames);
             }
         }
     }
