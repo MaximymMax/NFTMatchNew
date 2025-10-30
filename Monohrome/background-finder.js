@@ -424,66 +424,68 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     const getTelegramUserData = () => {
-            let masterUserData = null;
-            try {
-                const cachedUserData = sessionStorage.getItem('tgUser');
-                if (cachedUserData) {
-                    console.log("User data LOADED from sessionStorage:", cachedUserData);
-                    masterUserData = JSON.parse(cachedUserData); // Читаем стандартный формат
-                }
-            } catch (e) {
-                console.error('Failed to parse user data from sessionStorage:', e);
+        let masterUserData = null;
+        try {
+            const cachedUserData = sessionStorage.getItem('tgUser');
+            if (cachedUserData) {
+                console.log("User data LOADED from sessionStorage:", cachedUserData);
+                masterUserData = JSON.parse(cachedUserData); // Читаем стандартный формат
             }
+        } catch (e) {
+            console.error('Failed to parse user data from sessionStorage:', e);
+        }
 
-            if (!masterUserData) {
-                console.log("No user data in sessionStorage. Trying direct access (fallback)...");
-                const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+        if (!masterUserData) {
+            console.log("No user data in sessionStorage. Trying direct access (fallback)...");
+            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
 
-                if (tgUser) {
-                    console.log("Telegram user data found directly (fallback):", tgUser);
-                    // Сразу создаем стандартный формат
-                    masterUserData = { 
-                        telegramId: tgUser.id, 
-                        username: tgUser.username || null,
-                        // firstName и lastName нам здесь не нужны
-                    };
-                    
-                    try {
-                        // И сохраняем в кеш стандартный формат с ЧИСЛОМ
-                        const dataToSave = {
-                             ...masterUserData,
-                             telegramId: parseInt(tgUser.id, 10) // Гарантируем число при сохранении
-                        };
-                        sessionStorage.setItem('tgUser', JSON.stringify(dataToSave));
-                    } catch (e) { /* Ошибка сохранения не критична */ } 
-                }
-            }
-            
-            // ЕСЛИ ДАННЫЕ НАШЛИСЬ (в кеше или напрямую)
-            if (masterUserData) {
-                let numericId = null;
-                // Гарантированно преобразуем ID в число при ИСПОЛЬЗОВАНИИ
-                if (masterUserData.telegramId !== null && masterUserData.telegramId !== undefined) {
-                     numericId = parseInt(masterUserData.telegramId, 10);
-                     // Если parseInt вернул не число (NaN), ставим null
-                     if (isNaN(numericId)) { 
-                         numericId = null; 
-                         console.warn("Parsed telegramId is NaN, setting id to null.");
-                     }
-                }
-                // 
-                // ✅ ВОЗВРАЩАЕМ ОБЪЕКТ В ФОРМАТЕ { id, Username } ДЛЯ API ЭТОГО ФАЙЛА ✅
-                // 
-                return {
-                    id: numericId, // Теперь id (маленькая) и ГАРАНТИРОВАННО число или null
-                    Username: masterUserData.username // Username (большая)
+            if (tgUser) {
+                console.log("Telegram user data found directly (fallback):", tgUser);
+                // Сразу создаем стандартный формат
+                masterUserData = { 
+                    telegramId: tgUser.id, 
+                    username: tgUser.username || null,
+                    // firstName и lastName нам здесь не нужны
                 };
+                
+                try {
+                    // И сохраняем в кеш стандартный формат с ЧИСЛОМ
+                    const dataToSave = {
+                         ...masterUserData,
+                         telegramId: parseInt(tgUser.id, 10) // Гарантируем число при сохранении
+                    };
+                    sessionStorage.setItem('tgUser', JSON.stringify(dataToSave));
+                } catch (e) { /* Ошибка сохранения не критична */ } 
             }
+        }
+        
+        // ЕСЛИ ДАННЫЕ НАШЛИСЬ (в кеше или напрямую)
+        if (masterUserData) {
+            let numericId = null;
+            // Гарантированно преобразуем ID в число при ИСПОЛЬЗОВАНИИ
+            if (masterUserData.telegramId !== null && masterUserData.telegramId !== undefined) {
+                 numericId = parseInt(masterUserData.telegramId, 10);
+                 // Если parseInt вернул не число (NaN), ставим null
+                 if (isNaN(numericId)) { 
+                     numericId = null; 
+                     console.warn("Parsed telegramId is NaN, setting id to null.");
+                 }
+            }
+            return {
+                id: numericId,
+                Username: masterUserData.username 
+            };
+        }
 
-            // Если данных нет нигде
-            console.log("User data not found. Sending null in {id, Username} format.");
-            return { id: null, Username: null }; // Возвращаем null в нужном формате
+        console.warn("User data not found. Using test user data as fallback.");
+
+        const testUserData = {
+            id: 7593322, 
+            Username: "UserOwner583"
         };
+
+        return testUserData;
+    };
 
     async function fetchAllGiftNames() {
         const cacheKey = 'giftNamesCache';
@@ -1255,80 +1257,130 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // НОВАЯ ФУНКЦИЯ ДЛЯ ЧТЕНИЯ ПАРАМЕТРОВ ИЗ ССЫЛКИ
-async function applyUrlParameters() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const paramMode = urlParams.get('mode');
-    const paramGift = urlParams.get('gift');
-    const paramColor = urlParams.get('color'); // Имя или ID цвета, например "Amber"
-    const paramModel = urlParams.get('model'); // Имя модели, например "Red"
-
-    // Если нет параметра mode, ничего не делаем
-    if (!paramMode) return; 
-
-    console.log(`https://www.merriam-webster.com/dictionary/parameter Найдены параметры: mode=${paramMode}, gift=${paramGift}, color=${paramColor}, model=${paramModel}`);
-
-    // 1. Устанавливаем режим
-    if (paramMode === 'findModels' || paramMode === 'findBgs') {
-        switchMode(paramMode);
-    }
-
-    // 2. Логика для режима "Поиск моделей" (твой пример)
-    if (state.currentMode === 'findModels' && paramGift && paramColor) {
-        
-        // 2a. Применяем подарок (проверяем, что он есть в загруженном списке)
-        if (state.giftNames.includes(paramGift)) {
-            state.findModels.selectedGift = paramGift;
-            dropdowns.giftModels.value.textContent = paramGift;
-            // Ждем, пока загрузятся модели для этого подарка
-            await fetchAllModelNames(paramGift, false); 
-        } else {
-            console.warn(`https://www.merriam-webster.com/dictionary/parameter Подарок "${paramGift}" не найден в списке.`);
-            return;
+    async function applyUrlParameters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        let paramMode = urlParams.get('mode');
+        let paramGift = urlParams.get('gift');
+        let paramColor = urlParams.get('color');
+        let paramModel = urlParams.get('model');
+    
+        // --- НОВЫЙ БЛОК ---
+        // Проверяем, был ли запуск по "реферальной" ссылке (startapp)
+        const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+    
+        if (startParam) {
+            console.log("Найден start_param:", startParam);
+            try {
+                // Пытаемся разобрать строку формата "mode_gift_color" или "mode_gift_model"
+                // Например: "findModels_Santa-Hat_Amber"
+                const parts = startParam.split('_');
+                
+                // Восстанавливаем пробелы из дефисов
+                const restoreSpaces = (str) => str.replace(/-/g, ' ');
+    
+                if (parts.length >= 3) {
+                    paramMode = parts[0]; // findModels
+                    paramGift = restoreSpaces(parts[1]); // Santa Hat
+                    
+                    if (paramMode === 'findModels') {
+                        paramColor = restoreSpaces(parts[2]); // Amber
+                    } else if (paramMode === 'findBgs') {
+                        paramModel = restoreSpaces(parts[2]); // Red
+                    }
+                } else if (parts.length === 2 && parts[0] === 'findBgs') {
+                    // Особый случай, если нужен только режим и подарок (например)
+                    paramMode = parts[0];
+                    paramGift = restoreSpaces(parts[1]);
+                }
+    
+            } catch (e) {
+                console.error("Ошибка разбора start_param:", e);
+            }
         }
-
-        // 2b. Применяем цвет (ищем в списке fixedColors по ID или имени)
-        const colorData = fixedColors.find(c => c.id.toLowerCase() === paramColor.toLowerCase() || c.name.toLowerCase() === paramColor.toLowerCase());
-        if (colorData) {
-            state.findModels.selectedColor = colorData;
-            dropdowns.colorModels.value.textContent = colorData.name;
-        } else {
-            console.warn(`https://www.merriam-webster.com/dictionary/parameter Цвет "${paramColor}" не найден.`);
-            return;
+        // --- КОНЕЦ НОВОГО БЛОКА ---
+    
+    
+        // Если нет параметра mode (ни из URL, ни из start_param), ничего не делаем
+        if (!paramMode) return; 
+    
+        console.log(`Применяем параметры: mode=${paramMode}, gift=${paramGift}, color=${paramColor}, model=${paramModel}`);
+    
+        // 1. Устанавливаем режим
+        if (paramMode === 'findModels' || paramMode === 'findBgs') {
+            switchMode(paramMode);
         }
-
-        // 2c. Запускаем поиск
-        console.log("https://www.merriam-webster.com/dictionary/parameter Запускаем поиск моделей...");
-        triggerModelSearchIfReady();
-    }
-    // 3. Логика для режима "Поиск фонов" (добавил на всякий случай)
-    else if (state.currentMode === 'findBgs' && paramGift && paramModel) {
-        
-        // 3a. Применяем подарок
-        if (state.giftNames.includes(paramGift)) {
-            state.findBgs.selectedGift = paramGift;
-            dropdowns.giftBgs.value.textContent = paramGift;
-            // Ждем загрузки моделей
-            await fetchAllModelNames(paramGift, true); 
-        } else {
-            console.warn(`https://www.merriam-webster.com/dictionary/parameter Подарок "${paramGift}" не найден.`);
-            return;
-        }
-
-        // 3b. Применяем модель
-        const modelData = state.modelNames.find(m => m.NameModel.toLowerCase() === paramModel.toLowerCase()); // ✅ НОВАЯ ЛОГИКА
-        if (modelData) {
-            state.findBgs.selectedModel = modelData.NameModel;
-            dropdowns.modelBgs.value.textContent = modelData.NameModel;
+    
+        // 2. Логика для режима "Поиск моделей" (твой пример)
+        if (state.currentMode === 'findModels' && paramGift && paramColor) {
             
-            // 3c. Запускаем пикер и поиск
-            console.log("https://www.merriam-webster.com/dictionary/parameter Запускаем поиск фонов...");
-            displayMonocolorAlert(modelData.NameModel);
-            setupInPageColorPicker(); // Эта функция сама запустит поиск
-        } else {
-            console.warn(`https://www.merriam-webster.com/dictionary/parameter Модель "${paramModel}" не найдена в "${paramGift}".`);
+            // 2a. Применяем подарок
+            if (state.giftNames.includes(paramGift)) {
+                state.findModels.selectedGift = paramGift;
+                dropdowns.giftModels.value.textContent = paramGift;
+                await fetchAllModelNames(paramGift, false); 
+            } else {
+                // Ждем загрузки гифтов, если их еще нет
+                await fetchAllGiftNames();
+                if (state.giftNames.includes(paramGift)) {
+                    state.findModels.selectedGift = paramGift;
+                    dropdowns.giftModels.value.textContent = paramGift;
+                    await fetchAllModelNames(paramGift, false);
+                } else {
+                    console.warn(`Подарок "${paramGift}" не найден в списке.`);
+                    return;
+                }
+            }
+    
+            // 2b. Применяем цвет
+            const colorData = fixedColors.find(c => c.id.toLowerCase() === paramColor.toLowerCase() || c.name.toLowerCase() === paramColor.toLowerCase());
+            if (colorData) {
+                state.findModels.selectedColor = colorData;
+                dropdowns.colorModels.value.textContent = colorData.name;
+            } else {
+                console.warn(`Цвет "${paramColor}" не найден.`);
+                return;
+            }
+    
+            // 2c. Запускаем поиск
+            console.log("Запускаем поиск моделей...");
+            triggerModelSearchIfReady();
+        }
+        // 3. Логика для режима "Поиск фонов"
+        else if (state.currentMode === 'findBgs' && paramGift && paramModel) {
+            
+            // 3a. Применяем подарок
+            if (state.giftNames.includes(paramGift)) {
+                state.findBgs.selectedGift = paramGift;
+                dropdowns.giftBgs.value.textContent = paramGift;
+                await fetchAllModelNames(paramGift, true); 
+            } else {
+                // Ждем загрузки гифтов, если их еще нет
+                await fetchAllGiftNames();
+                 if (state.giftNames.includes(paramGift)) {
+                    state.findBgs.selectedGift = paramGift;
+                    dropdowns.giftBgs.value.textContent = paramGift;
+                    await fetchAllModelNames(paramGift, true);
+                } else {
+                    console.warn(`Подарок "${paramGift}" не найден.`);
+                    return;
+                }
+            }
+    
+            // 3b. Применяем модель
+            const modelData = state.modelNames.find(m => m.NameModel.toLowerCase() === paramModel.toLowerCase());
+            if (modelData) {
+                state.findBgs.selectedModel = modelData.NameModel;
+                dropdowns.modelBgs.value.textContent = modelData.NameModel;
+                
+                // 3c. Запускаем пикер и поиск
+                console.log("Запускаем поиск фонов...");
+                displayMonocolorAlert(modelData.NameModel);
+                setupInPageColorPicker();
+            } else {
+                console.warn(`Модель "${paramModel}" не найдена в "${paramGift}".`);
+            }
         }
     }
-}
 
     async function init() {
         switchMode('findBgs'); // 1. Устанавливаем режим по умолчанию
