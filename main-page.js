@@ -58,21 +58,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 // --- НАЧАЛО ИЗМЕНЕНИЙ ---
                 //
                 try {
-                    const parts = startParam.split('_');
-                    const restoreSpaces = (str) => str.replace(/~/g, ' ');
-                    let newParams = new URLSearchParams(); // Создаем объект для ?=...
+                    // ✅ ИЗМЕНЕНИЕ 1: Разделяем по ДЕФИСУ
+                    const parts = startParam.split('-');
+
+                    // ✅ ИЗМЕНЕНИЕ 2: Восстанавливаем пробелы из ПОДЧЕРКИВАНИЯ
+                    const restoreSpaces = (str) => str.replace(/_/g, ' '); 
+                    
+                    let newParams = new URLSearchParams();
                     let targetPage = null;
 
-                    // Разбираем startParam "findModels_Santa-Hat_Amber"
+                    // Разбираем "findModels-Santa_Hat-Amber"
                     if (parts.length >= 3 && (parts[0] === 'findModels' || parts[0] === 'findBgs')) {
                         const paramMode = parts[0];
-                        const paramGift = restoreSpaces(parts[1]);
+                        const paramGift = restoreSpaces(parts[1]); // "Santa_Hat" -> "Santa Hat"
                         
                         newParams.set('mode', paramMode);
                         newParams.set('gift', paramGift);
 
                         if (paramMode === 'findModels') {
-                            const paramColor = restoreSpaces(parts[2]);
+                            const paramColor = restoreSpaces(parts[2]); // "Amber" -> "Amber"
                             newParams.set('color', paramColor);
                             targetPage = './Monohrome/background-finder.html';
                         } else if (paramMode === 'findBgs') {
@@ -87,10 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const newUrl = `${targetPage}?${newParams.toString()}`;
                         console.log(`Перенаправление: ${startParam} -> ${newUrl}`);
                         
-                        // Немедленно перенаправляем на нужную страницу с НОВЫМИ параметрами
                         window.location.href = newUrl;
-                        
-                        // ВАЖНО: Завершаем выполнение функции, чтобы не грузить главную
                         return;
                     } else {
                          console.warn("Не удалось разобрать start_param:", startParam);
