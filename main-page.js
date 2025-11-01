@@ -5,12 +5,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const CACHE_KEY = 'giftNamesCache';
     const TG_USER_KEY = 'tgUser';
 
-    // --- Функции нормализации (без изменений) ---
+    // --- Функции нормализации ---
     const normalize = (str) => {
         if (typeof str !== 'string') return '';
         return str.toLowerCase().replace(/[^a-z0-9]/g, '');
     };
 
+    /**
+     * Ищет "сырое" имя (напр. "SantaHat") в списке "правильных" имен
+     * @param {string} rawParam - Имя из start_param (напр. "SantaHat")
+     * @param {Array} list - Массив строк (для подарков) или объектов (для моделей)
+     * @param {string|null} key - Ключ объекта (напр. "NameModel")
+     * @returns {string|object} - Найденный элемент (строка или объект) или null
+     */
     const findNormalized = (rawParam, list, key = null) => {
         if (!rawParam || !list || list.length === 0) return null;
         const normalizedParam = normalize(rawParam);
@@ -26,10 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Загружает (или берет из кеша) список имен подарков
-     * Добавлена логика повторных попыток для "холодного старта"
      * @returns {Promise<string[]|null>} - Массив имен или null в случае ошибки
      */
-    const fetchAllGiftNames = async (retries = 3, delay = 2500) => {
+    const fetchAllGiftNames = async () => {
         try {
             const cachedData = sessionStorage.getItem(CACHE_KEY);
             if (cachedData) {
@@ -41,73 +47,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         console.log('Cache is empty. Fetching gift names from server...');
-        const url = `${SERVER_BASE_URL}/api/ListGifts/AllGiftNames`;
-
-        // --- ЛОГИКА ПОВТОРНЫХ ПОПЫТОК ---
-        for (let i = 0; i < retries; i++) {
-            try {
-                console.log(`[Router] Fetching gifts, attempt ${i + 1}/${retries}...`);
-                const response = await fetch(url);
-                if (!response.ok) {
-                    // Повторяем только при 5xx (ошибки сервера / холодный старт)
-                    if (response.status >= 500 && response.status < 600) {
-                         throw new Error(`Server cold start? Status: ${response.status}`);
-                    }
-                    console.error(`[Router] Non-retriable HTTP error: ${response.status}`);
-                    return null; // Фатальная ошибка (напр. 404)
-                }
-                const giftNames = await response.json();
-                sessionStorage.setItem(CACHE_KEY, JSON.stringify(giftNames));
-                console.log('Successfully fetched and cached gift names.');
-                return giftNames; // УСПЕХ
-            } catch (error) {
-                console.warn(`[Router] Attempt ${i + 1} failed: ${error.message}`);
-                if (i === retries - 1) {
-                    console.error('Failed to preload gift names after all retries.');
-                    return null; // Все попытки провалены
-                }
-                // Увеличиваем задержку
-                await new Promise(res => setTimeout(res, delay * (i + 1))); 
+        try {
+            const response = await fetch(`${SERVER_BASE_URL}/api/ListGifts/AllGiftNames`);
+            if (!response.ok) {
+                throw new Error(`Server responded with status: ${response.status}`);
             }
+            const giftNames = await response.json();
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify(giftNames));
+            console.log('Successfully fetched and cached gift names.');
+            return giftNames; // Возвращаем данные
+        } catch (error) {
+            console.error('Failed to preload gift names:', error);
+            return null; // Возвращаем null в случае ошибки
         }
-        return null;
     };
 
     /**
      * Загружает список моделей для ОДНОГО подарка
-     * Добавлена логика повторных попыток
      * @returns {Promise<object[]|null>} - Массив объектов моделей или null
      */
-    async function fetchAllModelNames(giftName, retries = 3, delay = 2500) {
+    async function fetchAllModelNames(giftName) {
         if (!giftName) return null;
         
         const url = `${SERVER_BASE_URL}/api/ListGifts/${encodeURIComponent(giftName)}/AllModelNames`;
-        
-        // --- ЛОГИКА ПОВТОРНЫХ ПОПЫТОК ---
-        for (let i = 0; i < retries; i++) {
-            try {
-                console.log(`[Router] Fetching models for "${giftName}", attempt ${i + 1}/${retries}...`);
-                const response = await fetch(url);
-                if (!response.ok) {
-                    if (response.status >= 500 && response.status < 600) {
-                        throw new Error(`Server cold start? Status: ${response.status}`);
-                    }
-                    console.error(`[Router] Non-retriable HTTP error: ${response.status}`);
-                    return null; 
-                }
-                const modelsList = await response.json();
-                console.log(`[API Success] Loaded models for "${giftName}":`, modelsList);
-                return modelsList; // УСПЕХ
-            } catch (error) {
-                console.warn(`[Router] Attempt ${i + 1} failed: ${error.message}`);
-                if (i === retries - 1) {
-                    console.error(`Failed to load models for ${giftName} after all retries.`);
-                    return null;
-                }
-                await new Promise(res => setTimeout(res, delay * (i + 1))); 
-            }
+        console.log(`%c[API Request] Fetching models for "${giftName}" from: ${url}`, 'color: dodgerblue');
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const modelsList = await response.json();
+            console.log(`%c[API Success] Loaded models for "${giftName}":`, 'color: green', modelsList);
+            return modelsList;
+        } catch (error) {
+            console.error(`[API Error] Ошибка при загрузке моделей для ${giftName}:`, error);
+            return null;
         }
-        return null;
     }
 
 
@@ -119,32 +92,22 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`[Router] Processing start_param: ${startParam}`);
         
         try {
-            //
-            // ------------------ ✅ ИСПРАВЛЕНИЕ 1 ------------------
-            //
-            // Ссылка: findModels_Santa-Hat_Amber
-            const parts = startParam.split('_'); // ⬅️ БЫЛО '-'
-            // parts[0] = "findModels"
-            // parts[1] = "Santa-Hat"
-            // parts[2] = "Amber"
-            //
-            // ---------------------------------------------------
-            //
-            
-            if (parts.length < 2) { // 2 части минимум (findBgs_Santa-Hat)
-                throw new Error("Неверный формат start_param. Ожидалось 2-3 части.");
+            // findModels-SantaHat-Amber
+            const parts = startParam.split('-');
+            if (parts.length < 3) {
+                throw new Error("Неверный формат start_param. Ожидалось 3 части.");
             }
 
             const paramMode = parts[0]; // findModels
-            const rawGift = parts[1]; // Santa-Hat
+            const rawGift = parts[1]; // SantaHat
+            const rawOther = parts[2]; // Amber (или Pepe)
 
-            // 1. Загружаем и ищем подарок (теперь с ретраями)
+            // 1. Загружаем и ищем подарок
             const allGiftNames = await fetchAllGiftNames();
             if (!allGiftNames) {
                 throw new Error("Не удалось загрузить список подарков.");
             }
 
-            // findNormalized("Santa-Hat", ["Santa Hat", ...]) -> "Santa Hat"
             const correctGiftName = findNormalized(rawGift, allGiftNames);
             if (!correctGiftName) {
                 throw new Error(`Подарок не найден. Искали: "${rawGift}"`);
@@ -159,19 +122,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 3. Обрабатываем в зависимости от режима
             if (paramMode === 'findModels') {
-                if (parts.length < 3) throw new Error("Неверный формат для findModels.");
-                
-                const rawColor = parts[2]; // "Amber"
-                // Просто передаем "Amber". background-finder.js сам его найдет.
+                const rawColor = rawOther;
+                // Просто передаем 'Amber' или 'JackintheBox'
+                // background-finder.js сам найдет его в fixedColors или среди моделей
                 newParams.set('color', rawColor); 
                 console.log(`[Router] Mode: findModels. Color: "${rawColor}"`);
 
             } else if (paramMode === 'findBgs') {
-                if (parts.length < 3) throw new Error("Неверный формат для findBgs.");
+                const rawModel = rawOther;
                 
-                const rawModel = parts[2]; // "Pepe"
-                
-                // Нужно загрузить модели (с ретраями)
+                // Нужно загрузить модели для этого подарка, чтобы найти правильное имя
                 const allModelNames = await fetchAllModelNames(correctGiftName);
                 if (!allModelNames) {
                     throw new Error(`Не удалось загрузить модели для "${correctGiftName}"`);
@@ -194,14 +154,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const newUrl = `${targetPage}?${newParams.toString()}`;
             console.log(`[Router] Redirecting to: ${newUrl}`);
             
-            // 5. Сообщаем, что готовы (ready() уже был вызван)
+            // 5. Сообщаем, что готовы (прямо перед редиректом)
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.ready();
+            }
+
             window.location.href = newUrl;
 
         } catch (e) {
             console.error("[Router] Ошибка обработки start_param:", e);
             // Если произошла ошибка, просто запускаем обычное приложение
-            // (ready() уже был вызван, просто загружаем данные)
-            preloadDataForMainPage();
+            initializeNormalApp();
         }
     };
 
@@ -209,10 +172,19 @@ document.addEventListener('DOMContentLoaded', () => {
      * Обычная инициализация (для тех, кто зашел без start_param)
      */
     const initializeNormalApp = () => {
-        console.log('Running normal app initialization (no start_param).');
         
-        // 1. Сохраняем данные пользователя
+        // 1. Сообщаем Telegram, что мы готовы.
+        if (window.Telegram && window.Telegram.WebApp) {
+            console.log('Signaling Telegram: WebApp is ready.');
+            window.Telegram.WebApp.ready();
+        }
+
+        // 2. ТЕПЕРЬ проверяем initData
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+            
+            console.log('Running inside Telegram WebApp. Initializing app...');
+            
+            // 3. Сохраняем данные пользователя
             try {
                 const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
                 if (tgUser) {
@@ -232,8 +204,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Failed to save REAL user data to sessionStorage:', e);
                 sessionStorage.removeItem(TG_USER_KEY);
             }
+
         } else {
-            // 1b. Если мы НЕ в Telegram, сохраняем фейковые данные
+            // 3b. Если мы НЕ в Telegram, сохраняем фейковые данные
             console.log('Not in Telegram WebApp. Saving FAKE user data for testing.');
             try {
                 if (!sessionStorage.getItem(TG_USER_KEY)) {
@@ -251,52 +224,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 2. Запускаем предзагрузку
-        preloadDataForMainPage();
-    };
-
-    /**
-     * Просто загружает данные для главной страницы в фон
-     */
-    const preloadDataForMainPage = () => {
-        console.log('Preloading gift names for main page cache...');
-        // Просто запускаем для кеша, не ждем (без ретраев, не критично)
-        fetch(SERVER_BASE_URL + '/api/ListGifts/AllGiftNames')
-            .then(res => res.json())
-            .then(giftNames => {
-                sessionStorage.setItem(CACHE_KEY, JSON.stringify(giftNames));
-                console.log('Main page preloading complete.');
-            })
-            .catch(e => console.warn('Main page preloading failed.', e));
+        // 4. Запускаем предзагрузку (на случай, если пользователь останется на этой странице)
+        fetchAllGiftNames(); // Просто запускаем для кеша, не ждем
     };
 
 
     //
-    // ------------------ ✅ ИСПРАВЛЕНИЕ 2 ------------------
-    // --- ГЛАВНАЯ ЛОГИКА ЗАПУСКА (ИСПРАВЛЕНА) ---
+    // --- ГЛАВНАЯ ЛОГИКА ЗАПУСКА ---
     //
     const initializeApp = () => {
     
-        // 1. СНАЧАЛА сообщаем Telegram, что мы готовы.
-        // Это делает initDataUnsafe 100% доступным.
-        if (window.Telegram && window.Telegram.WebApp) {
-            console.log('Signaling Telegram: WebApp is ready.');
-            window.Telegram.WebApp.ready();
-        }
-
-        // 2. ТЕПЕРЬ читаем start_param.
-        // Он 100% будет (или undefined, если его нет)
+        // 1. Проверяем start_param СРАЗУ
+        // (ready() еще НЕ вызывался)
         const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
         
         if (startParam) {
             // Если есть start_param, запускаем "РОУТЕР"
+            // Он сам вызовет ready() перед редиректом
             handleStartParam(startParam);
         } else {
             // Если start_param нет, запускаем обычную инициализацию
+            // (она вызовет ready() в самом начале)
             initializeNormalApp();
         }
     };
-    // ---------------------------------------------------
 
     // Запускаем одну главную функцию
     initializeApp();
