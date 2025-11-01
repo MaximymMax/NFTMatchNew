@@ -192,6 +192,42 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'Turquoise', name: 'Turquoise', hex: '#5EC0B8', gradient: 'radial-gradient(circle, rgb(94, 192, 184) 0%, rgb(61, 146, 142) 100%)' },
     ];
     
+    const normalize = (str) => {
+        if (typeof str !== 'string') return '';
+        return str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    };
+
+    /**
+     * Ищет "сырое" имя (напр. "SantaHat") в списке "правильных" имен
+     */
+    const findNormalized = (rawParam, list, key = null) => {
+        if (!rawParam || !list || list.length === 0) return null;
+        
+        const normalizedParam = normalize(rawParam);
+        if (!normalizedParam) return null;
+
+        return list.find(item => {
+            // Получаем "правильное" имя из списка
+            const correctName = key ? item[key] : item;
+            // Нормализуем его и сравниваем
+            return normalize(correctName) === normalizedParam;
+        });
+    };
+    
+    /**
+     * Ищет цвет по имени или ID, используя нормализацию
+     */
+    const findNormalizedColor = (rawParam, list) => {
+        if (!rawParam || !list) return null;
+        const normalizedParam = normalize(rawParam);
+        if (!normalizedParam) return null;
+        
+        return list.find(item => 
+            normalize(item.name) === normalizedParam || 
+            normalize(item.id) === normalizedParam
+        );
+    };
+
     let state = {
         currentMode: 'findBgs',
         giftNames: [],
@@ -1264,11 +1300,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let paramColor = urlParams.get('color');
         let paramModel = urlParams.get('model');
     
-        //
-        // --- УДАЛИЛИ БЛОК ПРОВЕРКИ startParam ---
-        //
+        // --- БЛОК start_param ОТСЮДА УДАЛЕН ---
     
-        // Если нет параметра mode, ничего не делаем
+        // Если нет параметра mode (только из URL), ничего не делаем
         if (!paramMode) return; 
     
         console.log(`Применяем параметры: mode=${paramMode}, gift=${paramGift}, color=${paramColor}, model=${paramModel}`);
@@ -1278,29 +1312,27 @@ document.addEventListener('DOMContentLoaded', () => {
             switchMode(paramMode);
         }
     
-        // 2. Логика для режима "Поиск моделей" (твой пример)
+        // 2. Логика для режима "Поиск моделей"
         if (state.currentMode === 'findModels' && paramGift && paramColor) {
             
             // 2a. Применяем подарок
+            // Ждем загрузки гифтов, если их еще нет (на всякий случай)
+            if (state.giftNames.length === 0) {
+                 await fetchAllGiftNames();
+            }
+            
+            // Ищем подарок по имени (уже должно быть правильное "Santa Hat")
             if (state.giftNames.includes(paramGift)) {
                 state.findModels.selectedGift = paramGift;
                 dropdowns.giftModels.value.textContent = paramGift;
                 await fetchAllModelNames(paramGift, false); 
             } else {
-                // Ждем загрузки гифтов, если их еще нет
-                await fetchAllGiftNames();
-                if (state.giftNames.includes(paramGift)) {
-                    state.findModels.selectedGift = paramGift;
-                    dropdowns.giftModels.value.textContent = paramGift;
-                    await fetchAllModelNames(paramGift, false);
-                } else {
-                    console.warn(`Подарок "${paramGift}" не найден в списке.`);
-                    return;
-                }
+                console.warn(`Подарок "${paramGift}" не найден в списке.`);
+                return;
             }
     
-            // 2b. Применяем цвет
-            const colorData = fixedColors.find(c => c.id.toLowerCase() === paramColor.toLowerCase() || c.name.toLowerCase() === paramColor.toLowerCase());
+            // 2b. Применяем цвет (используем нашу функцию нормализации)
+            const colorData = findNormalizedColor(paramColor, fixedColors);
             if (colorData) {
                 state.findModels.selectedColor = colorData;
                 dropdowns.colorModels.value.textContent = colorData.name;
@@ -1317,32 +1349,22 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (state.currentMode === 'findBgs' && paramGift && paramModel) {
             
             // 3a. Применяем подарок
+            if (state.giftNames.length === 0) {
+                await fetchAllGiftNames();
+            }
             if (state.giftNames.includes(paramGift)) {
                 state.findBgs.selectedGift = paramGift;
                 dropdowns.giftBgs.value.textContent = paramGift;
-                await fetchAllModelNames(paramGift, true); 
+                await fetchAllModelNames(paramGift, true);
             } else {
-                // Ждем загрузки гифтов, если их еще нет
-                await fetchAllGiftNames();
-                 if (state.giftNames.includes(paramGift)) {
-                    state.findBgs.selectedGift = paramGift;
-                    dropdowns.giftBgs.value.textContent = paramGift;
-                    await fetchAllModelNames(paramGift, true);
-                } else {
-                    console.warn(`Подарок "${paramGift}" не найден.`);
-                    return;
-                }
+                console.warn(`Подарок "${paramGift}" не найден.`);
+                return;
             }
     
-            // 3b. Применяем модель
-            // ✅ ИСПРАВЛЕНИЕ: Ждем, пока state.modelNames будет заполнен
-            if (state.modelNames.length === 0) {
-                 console.warn("Модели еще не загружены, ждем...");
-                 await fetchAllModelNames(paramGift, true); // Принудительно ждем загрузки
-            }
-            
-            const modelData = state.modelNames.find(m => m.NameModel.toLowerCase() === paramModel.toLowerCase());
+            // 3b. Применяем модель (используем нашу функцию нормализации)
+            const modelData = findNormalized(paramModel, state.modelNames, 'NameModel');
             if (modelData) {
+                // modelData - это ОБЪЕКТ { NameModel: "Pepe", ... }
                 state.findBgs.selectedModel = modelData.NameModel;
                 dropdowns.modelBgs.value.textContent = modelData.NameModel;
                 
@@ -1351,8 +1373,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayMonocolorAlert(modelData.NameModel);
                 setupInPageColorPicker();
             } else {
-                console.warn(`Модель "${paramModel}" не найдена в "${paramGift}".`);
-                console.log('Доступные модели:', state.modelNames);
+                console.warn(`Модель "${paramModel}" не найдена в "${paramGift}". Доступные:`, state.modelNames.map(m => m.NameModel));
             }
         }
     }
