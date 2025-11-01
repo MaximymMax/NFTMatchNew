@@ -85,6 +85,12 @@ header nav {
     transform: none;
     top: auto;
     right: auto;
+
+    /* --- ДОБАВЛЕНО --- */
+    display: flex;
+    flex-direction: row; /* Располагаем иконки в ряд */
+    align-items: center;
+    gap: 1.5rem; /* Расстояние между иконками */
 }
 
 .header-logo {
@@ -1976,4 +1982,5 @@ main {
     .model-item {
         height: 55px;
     }
+
 }
