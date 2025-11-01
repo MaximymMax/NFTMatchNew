@@ -68,6 +68,12 @@ header nav {
     transform: none;
     top: auto;
     right: auto;
+
+    /* --- ДОБАВЛЕНО --- */
+    display: flex;
+    flex-direction: row; /* Располагаем иконки в ряд */
+    align-items: center;
+    gap: 1.5rem; /* Расстояние между иконками */
 }
 
 .header-logo {
@@ -895,3 +901,4 @@ main {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
