@@ -20,7 +20,12 @@
     --image-background-color: rgb(45, 61, 87);
     --lottie-card-bg-color: #a9a9a9;
 }
-
+header nav {
+    display: flex;
+    flex-direction: row; /* Располагаем иконки в ряд */
+    align-items: center;
+    gap: 1.5rem; /* Расстояние между иконками */
+}
 body {
     font-family: 'Inter', sans-serif;
     background: linear-gradient(180deg, #1a237e 0%, #0a1020 100%);
