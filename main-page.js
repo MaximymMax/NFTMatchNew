@@ -5,19 +5,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const CACHE_KEY = 'giftNamesCache';
     const TG_USER_KEY = 'tgUser';
 
-    // --- Функции нормализации ---
+    // --- Функции нормализации (без изменений) ---
     const normalize = (str) => {
         if (typeof str !== 'string') return '';
         return str.toLowerCase().replace(/[^a-z0-9]/g, '');
     };
 
-    /**
-     * Ищет "сырое" имя (напр. "SantaHat") в списке "правильных" имен
-     * @param {string} rawParam - Имя из start_param (напр. "SantaHat")
-     * @param {Array} list - Массив строк (для подарков) или объектов (для моделей)
-     * @param {string|null} key - Ключ объекта (напр. "NameModel")
-     * @returns {string|object} - Найденный элемент (строка или объект) или null
-     */
     const findNormalized = (rawParam, list, key = null) => {
         if (!rawParam || !list || list.length === 0) return null;
         const normalizedParam = normalize(rawParam);
@@ -29,12 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // --- API Функции ---
+    // --- API Функции (без изменений) ---
 
-    /**
-     * Загружает (или берет из кеша) список имен подарков
-     * @returns {Promise<string[]|null>} - Массив имен или null в случае ошибки
-     */
     const fetchAllGiftNames = async () => {
         try {
             const cachedData = sessionStorage.getItem(CACHE_KEY);
@@ -62,10 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    /**
-     * Загружает список моделей для ОДНОГО подарка
-     * @returns {Promise<object[]|null>} - Массив объектов моделей или null
-     */
     async function fetchAllModelNames(giftName) {
         if (!giftName) return null;
         
@@ -86,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * ГЛАВНЫЙ РОУТЕР
-     * Обрабатывает start_param, загружает данные и перенаправляет
+     * (Без изменений, кроме удаления .ready())
      */
     const handleStartParam = async (startParam) => {
         console.log(`[Router] Processing start_param: ${startParam}`);
@@ -103,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const rawOther = parts[2]; // Amber (или Pepe)
 
             // 1. Загружаем и ищем подарок
+            //    (Тут и есть твой await, который ждет "холодный старт")
             const allGiftNames = await fetchAllGiftNames();
             if (!allGiftNames) {
                 throw new Error("Не удалось загрузить список подарков.");
@@ -123,21 +109,18 @@ document.addEventListener('DOMContentLoaded', () => {
             // 3. Обрабатываем в зависимости от режима
             if (paramMode === 'findModels') {
                 const rawColor = rawOther;
-                // Просто передаем 'Amber' или 'JackintheBox'
-                // background-finder.js сам найдет его в fixedColors или среди моделей
                 newParams.set('color', rawColor); 
                 console.log(`[Router] Mode: findModels. Color: "${rawColor}"`);
 
             } else if (paramMode === 'findBgs') {
                 const rawModel = rawOther;
                 
-                // Нужно загрузить модели для этого подарка, чтобы найти правильное имя
+                // (Тут второй await, который тоже ждет)
                 const allModelNames = await fetchAllModelNames(correctGiftName);
                 if (!allModelNames) {
                     throw new Error(`Не удалось загрузить модели для "${correctGiftName}"`);
                 }
 
-                // Ищем "Pepe" среди [ { NameModel: "Pepe" }, ... ]
                 const correctModel = findNormalized(rawModel, allModelNames, 'NameModel');
                 if (!correctModel) {
                     throw new Error(`Модель не найдена. Искали: "${rawModel}" в "${correctGiftName}"`);
@@ -154,10 +137,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const newUrl = `${targetPage}?${newParams.toString()}`;
             console.log(`[Router] Redirecting to: ${newUrl}`);
             
-            // 5. Сообщаем, что готовы (прямо перед редиректом)
-            if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.ready();
-            }
+            // 5.
+            // --- УДАЛЕНО: .ready() УЖЕ БЫЛ ВЫЗВАН ---
+            //
 
             window.location.href = newUrl;
 
@@ -170,15 +152,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Обычная инициализация (для тех, кто зашел без start_param)
+     * (Изменено: убран вызов .ready())
      */
     const initializeNormalApp = () => {
         
-        // 1. Сообщаем Telegram, что мы готовы.
-        if (window.Telegram && window.Telegram.WebApp) {
-            console.log('Signaling Telegram: WebApp is ready.');
-            window.Telegram.WebApp.ready();
-        }
-
+        //
+        // --- УДАЛЕНО: .ready() УЖЕ БЫЛ ВЫЗВАН ---
+        //
+        console.log('Running normal app initialization (no start_param).');
+        
         // 2. ТЕПЕРЬ проверяем initData
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
             
@@ -230,21 +212,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     //
-    // --- ГЛАВНАЯ ЛОГИКА ЗАПУСКА ---
+    // --- ГЛАВНАЯ ЛОГИКА ЗАПУСКА (ИСПРАВЛЕНА) ---
     //
     const initializeApp = () => {
     
-        // 1. Проверяем start_param СРАЗУ
-        // (ready() еще НЕ вызывался)
+        // 1. СНАЧАЛА сообщаем Telegram, что мы готовы.
+        // Это ГАРАНТИРУЕТ, что initDataUnsafe будет доступен.
+        if (window.Telegram && window.Telegram.WebApp) {
+            console.log('Signaling Telegram: WebApp is ready.');
+            window.Telegram.WebApp.ready();
+        }
+
+        // 2. ТЕПЕРЬ, после ready(), мы можем безопасно читать start_param
         const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
         
         if (startParam) {
             // Если есть start_param, запускаем "РОУТЕР"
-            // Он сам вызовет ready() перед редиректом
+            // (Он сам будет ждать (await) загрузки API)
             handleStartParam(startParam);
         } else {
             // Если start_param нет, запускаем обычную инициализацию
-            // (она вызовет ready() в самом начале)
             initializeNormalApp();
         }
     };
