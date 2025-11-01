@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 //
                 try {
                     const parts = startParam.split('_');
-                    const restoreSpaces = (str) => str.replace(/-/g, ' ');
+                    const restoreSpaces = (str) => str.replace(/~/g, ' ');
                     let newParams = new URLSearchParams(); // Создаем объект для ?=...
                     let targetPage = null;
 
