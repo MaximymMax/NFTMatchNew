@@ -303,6 +303,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalBgName = document.getElementById('modal-bg-name');
     const modalCompatValue = document.getElementById('modal-compat-value');
     const modalGiftCount = document.getElementById('modal-gift-count');
+
+    function getApiAuthHeader() {
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+        const initData = window.Telegram.WebApp.initData;
+        if (initData) {
+            return `Tma ${initData}`;
+        }
+    }
+
+    try {
+        const bypassKey = sessionStorage.getItem(BYPASS_KEY_STORAGE);
+        if (bypassKey) {
+            console.warn(`[AUTH] Using TEST BYPASS KEY for API auth.`);
+            return `Tma ${bypassKey}`;
+        }
+    } catch (e) { /* sessionStorage может быть недоступен */ }
+    
+    console.error("[AUTH] Не удалось получить initData или ключ обхода. API-запросы не будут авторизованы.");
+    return 'Tma invalid';
+}
+
+async function secureFetch(apiUrl, requestBody) {
+    const authHeader = getApiAuthHeader();
+    
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader // <-- 🛡️ ЗАЩИТА ДОБАВЛЕНА
+        },
+        body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+        let errorDetails = await response.text();
+        try {
+            const errorJson = JSON.parse(errorDetails);
+            errorDetails = errorJson.error || errorJson.message || errorDetails;
+        } catch (e) { /* это была не-JSON строка */ }
+        
+        throw new Error(`[API ${response.status}] ${errorDetails}`);
+    }
+
+    return await response.json(); 
+}
     
     const dropdowns = {
         giftBgs: {
@@ -668,7 +713,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
 
-            const serverData = await response.json();
+            const serverData = await secureFetch(apiUrl, requestBody);
             console.log('%c[API Success] Received background data:', 'color: green', serverData);
 
             const enrichedBgs = serverData.map(item => {
@@ -715,7 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
             
-            const serverData = await response.json();
+            const serverData = await secureFetch(apiUrl, requestBody);
             console.log('%c[API Success] Received model data:', 'color: green', serverData);
 
             const modelsToRender = serverData.map(item => ({
@@ -813,7 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
             
-            const countsData = await response.json(); // Ожидаем массив [GiftCountResponse]
+            const serverData = await secureFetch(apiUrl, requestBody); // Ожидаем массив [GiftCountResponse]
             console.log('%c[API Success] Received gift counts:', 'color: green', countsData);
 
             // 3. Объединяем данные
@@ -1404,3 +1449,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     init();
 });
+
