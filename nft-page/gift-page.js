@@ -3,7 +3,8 @@ const API_PHOTO_URL = 'https://cdn.changes.tg/gifts/models';
 const API_GIFT_ORIGINALS_URL = 'https://cdn.changes.tg/gifts/originals'; 
 import { initColorPicker } from './ColorPicker/color-picker-modal.js';
 import { initNftDetailsModal } from './nft-details-modal.js';
-
+const INIT_DATA_KEY = 'tgInitData';
+const BYPASS_KEY_STORAGE = 'apiBypassKey';
 let observerMap = new Map();
 
 const GIFT_NAME_TO_ID = {
@@ -166,6 +167,66 @@ document.addEventListener('DOMContentLoaded', () => {
     const multiSelectControls = Array.from(document.querySelectorAll('.multi-select-container button, .multi-select-container input'));
     const mainDropdownHeaders = Array.from(document.querySelectorAll('.custom-dropdown-container .dropdown-header'));
 
+    function getApiAuthHeader() {
+    // 1. Пытаемся получить initData ИЗ КЭША
+    try {
+        const initData = sessionStorage.getItem(INIT_DATA_KEY);
+        if (initData) {
+            console.log('[AUTH] Using initData from sessionStorage.');
+            return `Tma ${initData}`;
+        }
+    } catch (e) { /* sessionStorage может быть недоступен */ }
+
+    // 2. Пытаемся получить ключ обхода (для тестов в браузере)
+    try {
+        const bypassKey = sessionStorage.getItem(BYPASS_KEY_STORAGE);
+        if (bypassKey) {
+            console.warn(`[AUTH] Using TEST BYPASS KEY for API auth.`);
+            return `Tma ${bypassKey}`;
+        }
+    } catch (e) { /* sessionStorage может быть недоступен */ }
+    
+    // 3. (Fallback) Попытка прочитать initData напрямую
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+        const directInitData = window.Telegram.WebApp.initData;
+        if (directInitData) {
+            console.warn('[AUTH] Using direct initData (fallback).');
+            try { sessionStorage.setItem(INIT_DATA_KEY, directInitData); } catch(e) {}
+            return `Tma ${directInitData}`;
+        }
+    }
+
+    // 4. Если ничего нет
+    console.error("[AUTH] Не удалось получить initData или ключ обхода. API-запросы не будут авторизованы.");
+    return 'Tma invalid';
+}
+
+    async function secureFetch(apiUrl, requestBody, signal = null) { // <-- 1. Добавлен signal
+    const authHeader = getApiAuthHeader();
+    
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader
+        },
+        body: JSON.stringify(requestBody),
+        signal: signal // <-- 2. Передаем signal в fetch
+    });
+
+    if (!response.ok) {
+        let errorDetails = await response.text();
+        try {
+            const errorJson = JSON.parse(errorDetails);
+            errorDetails = errorJson.error || errorJson.message || errorDetails;
+        } catch (e) { /* это была не-JSON строка */ }
+        
+        throw new Error(`[API ${response.status}] ${errorDetails}`);
+    }
+
+    return await response.json(); 
+}
+    
     const controlsToDisableOnEmpty = [
         sortSelectDesktop, 
         sortMobileButton, 
@@ -686,19 +747,11 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Sending request body:", JSON.stringify(requestBody));
 
         try {
-            const response = await fetch(`${SERVER_BASE_URL}/api/MonoCoof/SimilarNFTs`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody),
-                signal: signal 
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-            }
-
-            const dataObject = await response.json(); 
+            const dataObject = await secureFetch(
+                `${SERVER_BASE_URL}/api/MonoCoof/SimilarNFTs`, 
+                requestBody, 
+                signal
+            );
             similarNFTsData = [];
 
             console.log(dataObject);
@@ -1486,3 +1539,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initPage();
 });
+
