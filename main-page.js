@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const SERVER_BASE_URL = 'https://nftmatchbot20250730152328.azurewebsites.net';
     const CACHE_KEY = 'giftNamesCache';
     const TG_USER_KEY = 'tgUser';
+    const INIT_DATA_KEY = 'tgInitData';
+    const BYPASS_KEY_STORAGE = 'apiBypassKey';
 
     // --- Функции нормализации (без изменений) ---
     const normalize = (str) => {
@@ -187,6 +189,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 sessionStorage.removeItem(TG_USER_KEY);
             }
 
+            try {
+                const initData = window.Telegram.WebApp.initData;
+                if (initData) {
+                    sessionStorage.setItem(INIT_DATA_KEY, initData);
+                    console.log('REAL initData SAVED to sessionStorage.');
+                    // На всякий случай чистим ключ обхода
+                    sessionStorage.removeItem(BYPASS_KEY_STORAGE);
+            	  } else {
+                    console.warn('initData string not found, auth will fail on next page.');
+            	  }
+            } catch (e) {
+                console.error('Failed to save REAL initData:', e);
+            }
+            
         } else {
             // 3b. Если мы НЕ в Telegram, сохраняем фейковые данные
             console.log('Not in Telegram WebApp. Saving FAKE user data for testing.');
@@ -204,6 +220,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) {
                 console.error('Failed to save FAKE user data to sessionStorage:', e);
             }
+            try {
+                sessionStorage.removeItem(INIT_DATA_KEY);
+            	console.warn('RUN: sessionStorage.setItem("apiBypassKey", "your_secret_key") for testing.');
+            } catch(e) {}
         }
 
         // 4. Запускаем предзагрузку (на случай, если пользователь останется на этой странице)
@@ -240,3 +260,4 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
     
 });
+
