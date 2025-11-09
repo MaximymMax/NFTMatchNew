@@ -705,16 +705,8 @@ async function secureFetch(apiUrl, requestBody) {
         }
 
         try {
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody),
-            });
-
-            if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-
             const serverData = await secureFetch(apiUrl, requestBody);
-            console.log('%c[API Success] Received background data:', 'color: green', serverData);
+            console.log('%c[API Success] Received background data:', 'color: green', serverData);
 
             const enrichedBgs = serverData.map(item => {
                 const foundColor = fixedColors.find(fc => fc.id === item.Key);
@@ -752,16 +744,8 @@ async function secureFetch(apiUrl, requestBody) {
         console.log('Request Body:', requestBody);
 
         try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-            
-            const serverData = await secureFetch(apiUrl, requestBody);
-            console.log('%c[API Success] Received model data:', 'color: green', serverData);
+            const serverData = await secureFetch(url, requestBody); 
+            console.log('%c[API Success] Received model data:', 'color: green', serverData);
 
             const modelsToRender = serverData.map(item => ({
                 modelName: item.Name,
@@ -850,16 +834,8 @@ async function secureFetch(apiUrl, requestBody) {
         console.log(`%c[API Request] Fetching counts for ${results.length} items...`, 'color: dodgerblue', requestBody);
         
         try {
-            const response = await fetch(countApiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody),
-            });
-
-            if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-            
-            const serverData = await secureFetch(apiUrl, requestBody); // Ожидаем массив [GiftCountResponse]
-            console.log('%c[API Success] Received gift counts:', 'color: green', countsData);
+            const countsData = await secureFetch(countApiUrl, requestBody); 
+            console.log('%c[API Success] Received gift counts:', 'color: green', countsData);
 
             // 3. Объединяем данные
             // Создаем Map для быстрого поиска
@@ -1449,4 +1425,5 @@ async function secureFetch(apiUrl, requestBody) {
 
     init();
 });
+
 
