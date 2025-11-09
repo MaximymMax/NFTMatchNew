@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const SERVER_BASE_URL = 'https://nftmatchbot20250730152328.azurewebsites.net';
     const API_PHOTO_URL = 'https://cdn.changes.tg/gifts/models';
     const API_GIFT_ORIGINALS_URL = 'https://cdn.changes.tg/gifts/originals'; 
-
+    const INIT_DATA_KEY = 'tgInitData';
     const GIFT_NAME_TO_ID = {
         "Santa Hat": "5983471780763796287",
         "Signet Ring": "5936085638515261992",
@@ -306,24 +306,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const BYPASS_KEY_STORAGE = 'apiBypassKey';
 
     function getApiAuthHeader() {
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
-        const initData = window.Telegram.WebApp.initData;
-        if (initData) {
-            return `Tma ${initData}`;
-        }
-    }
+        try {
+            const initData = sessionStorage.getItem(INIT_DATA_KEY);
+            if (initData) {
+                console.log('[AUTH] Using initData from sessionStorage.');
+                return `Tma ${initData}`;
+            }
+        } catch (e) { /* sessionStorage может быть недоступен */ }
 
-    try {
-        const bypassKey = sessionStorage.getItem(BYPASS_KEY_STORAGE);
-        if (bypassKey) {
-            console.warn(`[AUTH] Using TEST BYPASS KEY for API auth.`);
-            return `Tma ${bypassKey}`;
-        }
-    } catch (e) { /* sessionStorage может быть недоступен */ }
-    
-    console.error("[AUTH] Не удалось получить initData или ключ обхода. API-запросы не будут авторизованы.");
-    return 'Tma invalid';
-}
+        try {
+            const bypassKey = sessionStorage.getItem(BYPASS_KEY_STORAGE);
+            if (bypassKey) {
+                console.warn(`[AUTH] Using TEST BYPASS KEY for API auth.`);
+                return `Tma ${bypassKey}`;
+            }
+        } catch (e) { /* sessionStorage может быть недоступен */ }
+        
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+            const directInitData = window.Telegram.WebApp.initData;
+            if (directInitData) {
+                console.warn('[AUTH] Using direct initData (fallback).');
+                // Сохраняем его для будущих запросов на этой странице
+                try { sessionStorage.setItem(INIT_DATA_KEY, directInitData); } catch(e) {}
+                return `Tma ${directInitData}`;
+            }
+        }
+
+        console.error("[AUTH] Не удалось получить initData или ключ обхода. API-запросы не будут авторизованы.");
+        return 'Tma invalid';
+    }
 
 async function secureFetch(apiUrl, requestBody) {
     const authHeader = getApiAuthHeader();
@@ -1424,8 +1435,26 @@ async function secureFetch(apiUrl, requestBody) {
         await applyUrlParameters();
     }
 
-    init();
+    function initializeApp() {
+        if (window.Telegram && window.Telegram.WebApp) {
+            console.log('[App] Signaling Telegram: WebApp is ready.');
+            // 1. Сначала сообщаем Telegram, что мы готовы.
+            window.Telegram.WebApp.ready();
+            
+            // 2. Теперь (после .ready()) мы можем безопасно запускать init(),
+            //    зная, что initData скоро будет доступен.
+            init();
+        } else {
+            // Это для тестов в обычном браузере
+            console.log('[App] Not in Telegram. Running init() for browser testing.');
+            init();
+        }
+    }
+
+    // Запускаем наш новый "загрузчик"
+    initializeApp();
 });
+
 
 
 
