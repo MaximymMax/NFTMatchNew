@@ -303,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalBgName = document.getElementById('modal-bg-name');
     const modalCompatValue = document.getElementById('modal-compat-value');
     const modalGiftCount = document.getElementById('modal-gift-count');
+    const BYPASS_KEY_STORAGE = 'apiBypassKey';
 
     function getApiAuthHeader() {
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
@@ -1425,5 +1426,6 @@ async function secureFetch(apiUrl, requestBody) {
 
     init();
 });
+
 
 
