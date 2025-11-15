@@ -70,10 +70,83 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    //
+    // --- НОВАЯ ФУНКЦИЯ ДЛЯ СОХРАНЕНИЯ ДАННЫХ ---
+    //
+    /**
+     * Сохраняет данные Telegram (реальные или фейковые) в sessionStorage.
+     * Вызывается один раз при запуске, СРАЗУ ПОСЛЕ .ready().
+     */
+    const saveTelegramDataToSession = () => {
+        // 1. Проверяем, есть ли мы в Telegram
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+            
+            console.log('Running inside Telegram WebApp. Saving data...');
+            
+            // 2а. Сохраняем данные пользователя
+            try {
+                const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+                if (tgUser) {
+                    const userData = {
+                        telegramId: parseInt(tgUser.id, 10), 
+                        username: tgUser.username || null,
+                        firstName: tgUser.first_name || null,
+                        lastName: tgUser.last_name || null,
+                    };
+                    sessionStorage.setItem(TG_USER_KEY, JSON.stringify(userData));
+                    console.log('REAL User data SAVED to sessionStorage:', userData);
+                } else {
+                    sessionStorage.removeItem(TG_USER_KEY);
+                    console.warn('tgUser object not found in initDataUnsafe, clearing cache.');
+                }
+            } catch (e) {
+                console.error('Failed to save REAL user data to sessionStorage:', e);
+                sessionStorage.removeItem(TG_USER_KEY);
+            }
+
+            // 2b. Сохраняем initData
+            try {
+                const initData = window.Telegram.WebApp.initData;
+                if (initData) {
+                    sessionStorage.setItem(INIT_DATA_KEY, initData);
+                    console.log('REAL initData SAVED to sessionStorage.');
+                    // На всякий случай чистим ключ обхода
+                    sessionStorage.removeItem(BYPASS_KEY_STORAGE);
+                } else {
+                    console.warn('initData string not found, auth will fail on next page.');
+                }
+            } catch (e) {
+                console.error('Failed to save REAL initData:', e);
+            }
+            
+        } else {
+            // 3. Если мы НЕ в Telegram, сохраняем фейковые данные
+            console.log('Not in Telegram WebApp. Saving FAKE user data for testing.');
+            try {
+                if (!sessionStorage.getItem(TG_USER_KEY)) {
+                    const testUserData = {
+                        telegramId: 7593322, 
+                        username: "UserOwner583",
+                        firstName: "Test",
+                        lastName: "Test",
+                    };
+                    sessionStorage.setItem(TG_USER_KEY, JSON.stringify(testUserData));
+                    console.log('FAKE User data SAVED to sessionStorage:', testUserData);
+                }
+            } catch (e) {
+                console.error('Failed to save FAKE user data to sessionStorage:', e);
+            }
+            try {
+                sessionStorage.removeItem(INIT_DATA_KEY);
+                console.warn('RUN: sessionStorage.setItem("apiBypassKey", "your_secret_key") for testing.');
+            } catch(e) {}
+        }
+    };
+
 
     /**
      * ГЛАВНЫЙ РОУТЕР
-     * (Без изменений, кроме удаления .ready())
+     * (Без изменений)
      */
     const handleStartParam = async (startParam) => {
         console.log(`[Router] Processing start_param: ${startParam}`);
@@ -90,7 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const rawOther = parts[2]; // Amber (или Pepe)
 
             // 1. Загружаем и ищем подарок
-            //    (Тут и есть твой await, который ждет "холодный старт")
             const allGiftNames = await fetchAllGiftNames();
             if (!allGiftNames) {
                 throw new Error("Не удалось загрузить список подарков.");
@@ -104,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 2. Готовим параметры
             let newParams = new URLSearchParams();
-            let targetPage = './Monohrome/background-finder.html';
+            let targetPage = './Monohrome/background-finder.html'; // Убедись, что путь верный
             newParams.set('mode', paramMode);
             newParams.set('gift', correctGiftName); // Кладём "Santa Hat"
 
@@ -117,7 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (paramMode === 'findBgs') {
                 const rawModel = rawOther;
                 
-                // (Тут второй await, который тоже ждет)
                 const allModelNames = await fetchAllModelNames(correctGiftName);
                 if (!allModelNames) {
                     throw new Error(`Не удалось загрузить модели для "${correctGiftName}"`);
@@ -154,78 +225,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Обычная инициализация (для тех, кто зашел без start_param)
-     * (Изменено: убран вызов .ready())
+     * (Изменено: убран вызов .ready() и логика сохранения данных)
      */
     const initializeNormalApp = () => {
-        
         //
         // --- УДАЛЕНО: .ready() УЖЕ БЫЛ ВЫЗВАН ---
+        // --- УДАЛЕНО: ВСЯ ЛОГИКА СОХРАНЕНИЯ (переехала в saveTelegramDataToSession) ---
         //
         console.log('Running normal app initialization (no start_param).');
         
-        // 2. ТЕПЕРЬ проверяем initData
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
-            
-            console.log('Running inside Telegram WebApp. Initializing app...');
-            
-            // 3. Сохраняем данные пользователя
-            try {
-                const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
-                if (tgUser) {
-                    const userData = {
-                        telegramId: parseInt(tgUser.id, 10), 
-                        username: tgUser.username || null,
-                        firstName: tgUser.first_name || null,
-                        lastName: tgUser.last_name || null,
-                    };
-                    sessionStorage.setItem(TG_USER_KEY, JSON.stringify(userData));
-                    console.log('REAL User data SAVED to sessionStorage:', userData);
-                } else {
-                    sessionStorage.removeItem(TG_USER_KEY);
-                    console.warn('tgUser object not found in initDataUnsafe, clearing cache.');
-                }
-            } catch (e) {
-                console.error('Failed to save REAL user data to sessionStorage:', e);
-                sessionStorage.removeItem(TG_USER_KEY);
-            }
-
-            try {
-                const initData = window.Telegram.WebApp.initData;
-                if (initData) {
-                    sessionStorage.setItem(INIT_DATA_KEY, initData);
-                    console.log('REAL initData SAVED to sessionStorage.');
-                    // На всякий случай чистим ключ обхода
-                    sessionStorage.removeItem(BYPASS_KEY_STORAGE);
-            	  } else {
-                    console.warn('initData string not found, auth will fail on next page.');
-            	  }
-            } catch (e) {
-                console.error('Failed to save REAL initData:', e);
-            }
-            
-        } else {
-            // 3b. Если мы НЕ в Telegram, сохраняем фейковые данные
-            console.log('Not in Telegram WebApp. Saving FAKE user data for testing.');
-            try {
-                if (!sessionStorage.getItem(TG_USER_KEY)) {
-                    const testUserData = {
-                        telegramId: 7593322, 
-                        username: "UserOwner583",
-                        firstName: "Test",
-                        lastName: "Test",
-                    };
-                    sessionStorage.setItem(TG_USER_KEY, JSON.stringify(testUserData));
-                    console.log('FAKE User data SAVED to sessionStorage:', testUserData);
-                }
-            } catch (e) {
-                console.error('Failed to save FAKE user data to sessionStorage:', e);
-            }
-            try {
-                sessionStorage.removeItem(INIT_DATA_KEY);
-            	console.warn('RUN: sessionStorage.setItem("apiBypassKey", "your_secret_key") for testing.');
-            } catch(e) {}
-        }
-
         // 4. Запускаем предзагрузку (на случай, если пользователь останется на этой странице)
         fetchAllGiftNames(); // Просто запускаем для кеша, не ждем
     };
@@ -243,15 +251,20 @@ document.addEventListener('DOMContentLoaded', () => {
             window.Telegram.WebApp.ready();
         }
 
-        // 2. ТЕПЕРЬ, после ready(), мы можем безопасно читать start_param
+        // 2. ТЕПЕРЬ, после ready(), мы можем безопасно читать initData
+        // и СРАЗУ СОХРАНЯТЬ его в sessionStorage.
+        // (Это ГЛАВНОЕ ИСПРАВЛЕНИЕ)
+        saveTelegramDataToSession();
+        
+        // 3. ТЕПЕРЬ читаем start_param
         const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
         
         if (startParam) {
-            // Если есть start_param, запускаем "РОУТЕР"
-            // (Он сам будет ждать (await) загрузки API)
+            // 4a. Если есть start_param, запускаем "РОУТЕР"
+            // (Он будет вызван ПОСЛЕ того, как данные сохранились)
             handleStartParam(startParam);
         } else {
-            // Если start_param нет, запускаем обычную инициализацию
+            // 4b. Если start_param нет, запускаем обычную инициализацию
             initializeNormalApp();
         }
     };
@@ -260,4 +273,3 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
     
 });
-
