@@ -1318,20 +1318,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchAllGiftNames() {
         const cacheKey = 'giftNamesCache';
+        // ... (код чтения кэша без изменений) ...
 
+        const url = `${SERVER_BASE_URL}/api/ListGifts/AllGiftNames`;
+        
         try {
-            const cachedData = sessionStorage.getItem(cacheKey);
-            if (cachedData) {
-                giftNames = JSON.parse(cachedData);
-                console.log("Названия подарков загружены из кэша sessionStorage.", giftNames);
-                populateDropdown(giftListOptions, giftNames, 'gift');
-                populateMultiSelectDropdown(giftNames);
-                return; 
-            }
+            // --- ИСПРАВЛЕНИЕ ---
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Authorization': getApiAuthHeader() }
+            });
+            // -------------------
+            
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            state.giftNames = await response.json();
+            
+            // ... (сохранение в кэш и populateDropdown без изменений) ...
         } catch (error) {
-            console.error('Ошибка при чтении кэша названий подарков:', error);
-            sessionStorage.removeItem(cacheKey);
+            console.error('[API Error]', error);
         }
+    }
 
         try {
             const response = await fetch(`${SERVER_BASE_URL}/api/ListGifts/AllGiftNames`);
@@ -1353,13 +1359,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function fetchAllModelNames(giftName) {
-
+    async function fetchAllModelNames(giftName, updateDOM = true) {
         if (!giftName || giftName.trim() === '') {
-            const placeholderHTML = `<li class="list-option list-placeholder"><span class="option-text">Сначала выберите подарок</span></li>`;
-            modelListOptions.innerHTML = placeholderHTML;
-            
-            modelNames = [];
+            if (updateDOM) {
+                dropdowns.modelBgs.options.innerHTML = `<div class="list-option list-placeholder">Сначала выберите коллекцию</div>`;
+            }
+            state.modelNames = [];
             
             if (modelDropdownHeader.classList.contains('open')) {
                 toggleDropdown(modelDropdownHeader);
@@ -1367,29 +1372,38 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const url = `${SERVER_BASE_URL}/api/ListGifts/${encodeURIComponent(giftName)}/AllModelNames`;
+        console.log(`%c[API Request] Fetching models for "${giftName}" from: ${url}`, 'color: dodgerblue');
+        
         try {
-            const response = await fetch(`${SERVER_BASE_URL}/api/ListGifts/${encodeURIComponent(giftName)}/AllModelNames`);
+            // --- ИСПРАВЛЕНИЕ: Добавлен хедер авторизации ---
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': getApiAuthHeader() // <--- Добавлено
+                }
+            });
+            // -----------------------------------------------
+
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
-            // ✅ ИЗМЕНЕНИЕ 1: Сервер возвращает массив (List), а не словарь (Dict)
             const modelsList = await response.json(); 
             console.log(modelsList);
             
-            // ✅ ИЗМЕНЕНИЕ 2: Адаптируем новый формат [ { NameModel: ..., IsMonochrome: ... } ] 
-            // к тому, который ожидает твой остальной код ( { name: ..., isMonochrome: ... } )
-            modelNames = modelsList.map(item => ({
+            state.modelNames = modelsList.map(item => ({
                 name: item.NameModel, 
                 isMonochrome: item.IsMonochrome
             }));
             
-            console.log(`Получены модели для ${giftName}:`, modelNames);
+            console.log(`%c[API Success] Loaded models for "${giftName}":`, 'color: green', state.modelNames);
             
-            // Эта строка остается без изменений, т.к. modelNames.map(m => m.name) по-прежнему вернет массив имен
-            populateDropdown(modelListOptions, modelNames.map(m => m.name), 'model'); 
+            if (updateDOM) {
+                populateDropdown(dropdowns.modelBgs.options, state.modelNames, 'model');
+            }
 
         } catch (error) {
-            console.error(`Ошибка при загрузке моделей для ${giftName}:`, error);
-            modelNames = [];
+            console.error(`[API Error] Ошибка при загрузке моделей для ${giftName}:`, error);
+            state.modelNames = [];
             modelSelectedValue.textContent = 'Выберите модель';
             const placeholderHTML = `<li class="list-option list-placeholder"><span class="option-text">Модели не найдены</span></li>`;
             modelListOptions.innerHTML = placeholderHTML;
@@ -1398,8 +1412,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchAndParseMainColors(giftName, modelName) {
         let mainColorsData = [];
+        const url = `${SERVER_BASE_URL}/api/ListGifts/${encodeURIComponent(giftName)}/${encodeURIComponent(modelName)}/MainColors`;
         try {
-            const colorsResponse = await fetch(`${SERVER_BASE_URL}/api/ListGifts/${encodeURIComponent(giftName)}/${encodeURIComponent(modelName)}/MainColors`);
+            // --- ИСПРАВЛЕНИЕ ---
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Authorization': getApiAuthHeader() }
+            });
             if (!colorsResponse.ok) {
                 throw new Error(`Ошибка HTTP при получении основных цветов: ${colorsResponse.status} ${colorsResponse.statusText}`);
             }
@@ -1540,5 +1559,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initPage();
 });
+
 
 
