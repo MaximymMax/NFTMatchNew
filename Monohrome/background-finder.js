@@ -580,8 +580,10 @@ async function secureFetch(apiUrl, requestBody) {
         return testUserData;
     };
 
+    //update
     async function fetchAllGiftNames() {
         const cacheKey = 'giftNamesCache';
+
         try {
             const cachedData = sessionStorage.getItem(cacheKey);
             if (cachedData) {
@@ -625,6 +627,7 @@ async function secureFetch(apiUrl, requestBody) {
             console.error('[API Error] Ошибка при загрузке названий подарков:', error);
         }
     }
+    
     async function fetchAllModelNames(giftName, updateDOM = true) {
         if (!giftName) {
             if (updateDOM) {
@@ -1472,6 +1475,7 @@ async function secureFetch(apiUrl, requestBody) {
     // Запускаем наш новый "загрузчик"
     initializeApp();
 });
+
 
 
 
