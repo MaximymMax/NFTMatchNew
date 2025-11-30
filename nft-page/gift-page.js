@@ -1323,63 +1323,37 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const cachedData = sessionStorage.getItem(cacheKey);
             if (cachedData) {
-                const parsedData = JSON.parse(cachedData);
-                
-                // Обновляем глобальное состояние
-                if (typeof state !== 'undefined') {
-                    state.giftNames = parsedData;
-                } else {
-                    giftNames = parsedData;
-                }
-
+                giftNames = JSON.parse(cachedData);
                 console.log('[Cache] Названия подарков загружены из кэша.');
-                
-                // Обновляем UI
-                populateDropdown(giftListOptions, parsedData, 'gift');
-                populateMultiSelectDropdown(parsedData);
-                return; // Выходим, чтобы не делать запрос
+                populateDropdown(giftListOptions, giftNames, 'gift');
+                populateMultiSelectDropdown(giftNames);
+                return;
             }
         } catch (error) {
-            console.error('[Cache Error] Ошибка чтения кэша:', error);
+            console.error('[Cache Error]', error);
             sessionStorage.removeItem(cacheKey);
         }
 
-        // 2. Запрос к серверу
         const url = `${SERVER_BASE_URL}/api/ListGifts/AllGiftNames`;
-        console.log(`%c[API Request] Fetching all gift names from: ${url}`, 'color: dodgerblue');
         
         try {
-            // ✅ ЕДИНСТВЕННЫЙ FETCH С ЗАГОЛОВКОМ
+            // ✅ ДОБАВЛЕН ХЕДЕР
             const response = await fetch(url, {
                 method: 'GET',
-                headers: { 
-                    'Authorization': getApiAuthHeader() 
-                }
+                headers: { 'Authorization': getApiAuthHeader() } 
             });
 
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
-            const data = await response.json();
+            giftNames = await response.json();
+            console.log("Названия подарков получены с сервера:", giftNames);
 
-            // Обновляем глобальное состояние
-            if (typeof state !== 'undefined') {
-                state.giftNames = data;
-            } else {
-                giftNames = data;
-            }
-
-            console.log("Названия подарков получены с сервера:", data);
-
-            // Сохраняем в кэш
             try {
-                sessionStorage.setItem(cacheKey, JSON.stringify(data));
-            } catch (error) {
-                console.error('Не удалось сохранить в кэш:', error);
-            }
+                sessionStorage.setItem(cacheKey, JSON.stringify(giftNames));
+            } catch (error) {}
             
-            // Обновляем UI
-            populateDropdown(giftListOptions, data, 'gift');
-            populateMultiSelectDropdown(data);
+            populateDropdown(giftListOptions, giftNames, 'gift');
+            populateMultiSelectDropdown(giftNames);
 
         } catch (error) {
             console.error('[API Error] Ошибка при загрузке названий подарков:', error);
@@ -1389,93 +1363,74 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchAllModelNames(giftName, updateDOM = true) {
         if (!giftName || giftName.trim() === '') {
             if (updateDOM) {
-                dropdowns.modelBgs.options.innerHTML = `<div class="list-option list-placeholder">Сначала выберите коллекцию</div>`;
+                modelListOptions.innerHTML = `<li class="list-option list-placeholder"><span class="option-text">Сначала выберите подарок</span></li>`;
             }
-            state.modelNames = [];
-            
-            if (modelDropdownHeader.classList.contains('open')) {
-                toggleDropdown(modelDropdownHeader);
-            }
+            modelNames = [];
             return;
         }
 
         const url = `${SERVER_BASE_URL}/api/ListGifts/${encodeURIComponent(giftName)}/AllModelNames`;
-        console.log(`%c[API Request] Fetching models for "${giftName}" from: ${url}`, 'color: dodgerblue');
         
         try {
-            // --- ИСПРАВЛЕНИЕ: Добавлен хедер авторизации ---
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Authorization': getApiAuthHeader() // <--- Добавлено
-                }
-            });
-            // -----------------------------------------------
-
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            
-            const modelsList = await response.json(); 
-            console.log(modelsList);
-            
-            state.modelNames = modelsList.map(item => ({
-                name: item.NameModel, 
-                isMonochrome: item.IsMonochrome
-            }));
-            
-            console.log(`%c[API Success] Loaded models for "${giftName}":`, 'color: green', state.modelNames);
-            
-            if (updateDOM) {
-                populateDropdown(dropdowns.modelBgs.options, state.modelNames, 'model');
-            }
-
-        } catch (error) {
-            console.error(`[API Error] Ошибка при загрузке моделей для ${giftName}:`, error);
-            state.modelNames = [];
-            modelSelectedValue.textContent = 'Выберите модель';
-            const placeholderHTML = `<li class="list-option list-placeholder"><span class="option-text">Модели не найдены</span></li>`;
-            modelListOptions.innerHTML = placeholderHTML;
-        }
-    }
-
-    async function fetchAndParseMainColors(giftName, modelName) {
-        let mainColorsData = [];
-        const url = `${SERVER_BASE_URL}/api/ListGifts/${encodeURIComponent(giftName)}/${encodeURIComponent(modelName)}/MainColors`;
-        try {
-            // --- ИСПРАВЛЕНИЕ ---
+            // ✅ ДОБАВЛЕН ХЕДЕР
             const response = await fetch(url, {
                 method: 'GET',
                 headers: { 'Authorization': getApiAuthHeader() }
             });
-            if (!colorsResponse.ok) {
-                throw new Error(`Ошибка HTTP при получении основных цветов: ${colorsResponse.status} ${colorsResponse.statusText}`);
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
+            const modelsList = await response.json(); 
+            
+            // Приводим к нужному формату
+            modelNames = modelsList.map(item => ({
+                name: item.NameModel, 
+                isMonochrome: item.IsMonochrome
+            }));
+            
+            if (updateDOM) {
+                populateDropdown(modelListOptions, modelNames.map(m => m.name), 'model');
             }
-             console.log(colorsResponse);
-            const colorsString = await colorsResponse.text();
-            console.log(colorsString);
-            if (colorsString) {
-                const cleanedString = colorsString.trim().replace(/^['"]|['"]$/g, '');
-                mainColorsData = cleanedString.split(';').map(item => {
-                    const trimmedItem = item.trim();
-                    if (!trimmedItem) return null;
-                    const parts = trimmedItem.split(':');
-                    if (parts.length !== 2) {
-                        console.warn(`Неверный формат элемента цвета: "${trimmedItem}"`);
-                        return null;
-                    }
-                    const posPart = parts[0];
-                    const hexPart = parts[1];
-                    const xMatch = posPart.match(/X=(\d+)/);
-                    const yMatch = posPart.match(/Y=(\d+)/);
-                    const x = xMatch ? parseInt(xMatch[1], 10) : 0;
-                    const y = yMatch ? parseInt(yMatch[1], 10) : 0;
-                    const hex = '#' + hexPart;
-                    return { x, y, hex };
-                }).filter(item => item !== null);
-            }
-            console.log("Получены и распарсены основные цвета:", mainColorsData);
-            return mainColorsData;
+
         } catch (error) {
-            console.error('Ошибка при загрузке основных цветов модели:', error);
+            console.error(`[API Error] Ошибка при загрузке моделей:`, error);
+            modelNames = [];
+        }
+    }
+
+    async function fetchAndParseMainColors(giftName, modelName) {
+        const url = `${SERVER_BASE_URL}/api/ListGifts/${encodeURIComponent(giftName)}/${encodeURIComponent(modelName)}/MainColors`;
+        try {
+            // ✅ ДОБАВЛЕН ХЕДЕР
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Authorization': getApiAuthHeader() }
+            });
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
+            const colorsString = await response.text();
+            if (!colorsString) return [];
+
+            // Логика парсинга остается прежней
+            const cleanedString = colorsString.trim().replace(/^['"]|['"]$/g, '');
+            const colors = cleanedString.split(';').map(item => {
+                const parts = item.trim().split(':');
+                if (parts.length !== 2) return null;
+                const posPart = parts[0];
+                const xMatch = posPart.match(/X=(\d+)/);
+                const yMatch = posPart.match(/Y=(\d+)/);
+                return {
+                    x: xMatch ? parseInt(xMatch[1], 10) : 0,
+                    y: yMatch ? parseInt(yMatch[1], 10) : 0,
+                    hex: '#' + parts[1]
+                };
+            }).filter(Boolean);
+            
+            return colors;
+
+        } catch (error) {
+            console.error('[API Error] Ошибка загрузки цветов:', error);
             return [];
         }
     }
@@ -1586,6 +1541,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initPage();
 });
+
 
 
 
