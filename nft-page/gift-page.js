@@ -760,45 +760,49 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dataObject && typeof dataObject === 'object') {
                 Object.entries(dataObject).forEach(([giftName, result]) => {
                     
-                    if (!result || !result.SimilarModels || result.SimilarModels.length < 3 || result.FloorPrice === undefined || !result.AverageColor) {
+                    if (!result || !result.SimilarModels || result.SimilarModels.length < 3) {
                         return;
                     }
                     
                     const modelsArray = result.SimilarModels;
-                    const colorString = result.AverageColor;
+                    const colorData = result.AverageColor;
                     const floorPrice = result.FloorPrice || 0; 
                     
-                    const rgbComponents = colorString.split(',').map(c => parseInt(c.trim(), 10));
-                    
-                    const r = rgbComponents[0];
-                    const g = rgbComponents[1];
-                    const b = rgbComponents[2];
-                    
-                    if (isNaN(r) || isNaN(g) || isNaN(b)) {
-                        console.warn(`Пропущен подарок ${giftName}: Не удалось распарсить строку цвета: ${colorString}.`);
-                        return;
-                    }
+                    // --- ИСПРАВЛЕННЫЙ ПАРСИНГ ЦВЕТА ---
+                    let colorHex = '#1e2944'; // Дефолтный цвет
 
-                    const colorHex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-                    
+                    if (colorData) {
+                        // Если сервер вернул ОБЪЕКТ (как на скрине: {R: 90, G: 109...})
+                        if (typeof colorData === 'object') {
+                            const r = colorData.R ?? colorData.r ?? 0;
+                            const g = colorData.G ?? colorData.g ?? 0;
+                            const b = colorData.B ?? colorData.b ?? 0;
+                            // Конвертируем в HEX
+                            colorHex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+                        }
+                        // Если сервер вдруг вернул СТРОКУ ("90, 109, 255")
+                        else if (typeof colorData === 'string') {
+                            const rgbComponents = colorData.split(',').map(c => parseInt(c.trim(), 10));
+                            if (rgbComponents.length >= 3 && !rgbComponents.some(isNaN)) {
+                                colorHex = `#${rgbComponents[0].toString(16).padStart(2, '0')}${rgbComponents[1].toString(16).padStart(2, '0')}${rgbComponents[2].toString(16).padStart(2, '0')}`;
+                            }
+                        }
+                    }
+                    // -----------------------------------
+
                     const model1 = modelsArray[0]; 
                     const model2 = modelsArray[1]; 
                     const model3 = modelsArray[2]; 
 
-                    const coefficient = model1.Value; 
-                    const model1Name = model1.Key;
-                    const model2Name = model2.Key;
-                    const model3Name = model3.Key;
-
                     similarNFTsData.push({
                         giftName: giftName,
-                        coefficient: coefficient,
-                        colorHex: colorHex,
+                        coefficient: model1.Value,
+                        colorHex: colorHex, // Используем полученный hex
                         avgPrice: floorPrice, 
                         
-                        model1Name: model1Name, 
-                        model2Name: model2Name, 
-                        model3Name: model3Name
+                        model1Name: model1.Key, 
+                        model2Name: model2.Key, 
+                        model3Name: model3.Key
                     });
                 });
             }
@@ -1541,6 +1545,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initPage();
 });
+
 
 
 
