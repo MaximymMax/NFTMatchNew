@@ -1,6 +1,7 @@
 const SERVER_BASE_URL = 'https://nftmatchbot20250730152328.azurewebsites.net/';
 const API_PHOTO_MODEL_URL = 'https://cdn.changes.tg/gifts/models'; 
 const API_SIMILAR_MODELS = '/api/MonoCoof/SimilarNFT'; 
+const BYPASS_KEY_STORAGE = 'apiBypassKey';
 
 export function initNftDetailsModal() {
     
@@ -21,6 +22,18 @@ export function initNftDetailsModal() {
     let cardGiftName = '';
     let apiColors = [];
 
+    function getApiAuthHeader() {
+        try {
+            const bypassKey = sessionStorage.getItem(BYPASS_KEY_STORAGE);
+            if (bypassKey) return `Tma ${bypassKey}`;
+        } catch (e) { }
+
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+            return `Tma ${window.Telegram.WebApp.initData}`;
+        }
+        return '';
+    }
+    
     function formatPrice(price) {
         if (price === 0 || price === null || price === undefined) {
             return 'нет в продаже';
@@ -131,63 +144,7 @@ export function initNftDetailsModal() {
         similarModelsList.innerHTML = '<div class="list-loading"><span class="spinner-small"></span> Загрузка моделей...</div>';
         
         try {
-            
-            const getTelegramUserData = () => {
-                let masterUserData = null;
-                try {
-                    const cachedUserData = sessionStorage.getItem('tgUser');
-                    if (cachedUserData) {
-                        console.log("User data LOADED from sessionStorage:", cachedUserData);
-                        masterUserData = JSON.parse(cachedUserData); 
-                    }
-                } catch (e) {
-                    console.error('Failed to parse user data from sessionStorage:', e);
-                }
-
-                if (!masterUserData) {
-                    console.log("No user data in sessionStorage. Trying direct access (fallback)...");
-                    const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-
-                    if (tgUser) {
-                        console.log("Telegram user data found directly (fallback):", tgUser);
-                        masterUserData = { 
-                            telegramId: tgUser.id, 
-                            username: tgUser.username || null,
-                        };
-                        
-                        try {
-                            const dataToSave = {
-                                 ...masterUserData,
-                                 telegramId: parseInt(tgUser.id, 10) 
-                            };
-                            sessionStorage.setItem('tgUser', JSON.stringify(dataToSave));
-                        } catch (e) { } 
-                    }
-                }
-                
-                if (masterUserData) {
-                    let numericId = null;
-                    if (masterUserData.telegramId !== null && masterUserData.telegramId !== undefined) {
-                         numericId = parseInt(masterUserData.telegramId, 10);
-                         if (isNaN(numericId)) { 
-                             numericId = null; 
-                             console.warn("Parsed telegramId is NaN, setting id to null.");
-                         }
-                    }
-                    return {
-                        id: numericId, 
-                        Username: masterUserData.username 
-                    };
-                }
-
-                console.log("User data not found. Sending null in {id, Username} format.");
-                return { id: null, Username: null }; 
-            };
-
-            const userData = getTelegramUserData();
-
             const requestBody = {
-                ...userData, 
                 "Colors": apiColors, 
                 "NameTargetGift": null,
                 "NameTargetModel": null,
@@ -195,11 +152,14 @@ export function initNftDetailsModal() {
                 "MonohromeModelsOnly": true 
             };
             
-             console.log(requestBody);
+            const authHeader = getApiAuthHeader();
             
-            const response = await fetch(`${SERVER_BASE_URL}${API_SIMILAR_MODELS}`, {
+            const response = await fetch(`${SERVER_BASE_URL}${API_SIMILAR_MODELS}?top=10`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': authHeader // <--- Ключ/InitData здесь
+                },
                 body: JSON.stringify(requestBody)
             });
 
@@ -285,3 +245,4 @@ export function initNftDetailsModal() {
         closeNftDetailsModal: closeNftDetailsModal
     };
 }
+
