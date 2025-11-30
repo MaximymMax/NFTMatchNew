@@ -1323,28 +1323,33 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const cachedData = sessionStorage.getItem(cacheKey);
             if (cachedData) {
-                // Если у тебя переменная называется giftNames или state.giftNames, 
-                // код ниже обработает оба варианта (записываем в giftNames для совместимости с твоим сниппетом)
-                giftNames = JSON.parse(cachedData);
-                if (typeof state !== 'undefined') state.giftNames = giftNames;
+                const parsedData = JSON.parse(cachedData);
+                
+                // Обновляем глобальное состояние
+                if (typeof state !== 'undefined') {
+                    state.giftNames = parsedData;
+                } else {
+                    giftNames = parsedData;
+                }
 
                 console.log('[Cache] Названия подарков загружены из кэша.');
                 
-                // Обновляем выпадающие списки
-                populateDropdown(giftListOptions, giftNames, 'gift');
-                populateMultiSelectDropdown(giftNames);
-                return;
+                // Обновляем UI
+                populateDropdown(giftListOptions, parsedData, 'gift');
+                populateMultiSelectDropdown(parsedData);
+                return; // Выходим, чтобы не делать запрос
             }
         } catch (error) {
-            console.error('[Cache Error]', error);
+            console.error('[Cache Error] Ошибка чтения кэша:', error);
             sessionStorage.removeItem(cacheKey);
         }
 
         // 2. Запрос к серверу
         const url = `${SERVER_BASE_URL}/api/ListGifts/AllGiftNames`;
+        console.log(`%c[API Request] Fetching all gift names from: ${url}`, 'color: dodgerblue');
         
         try {
-            // ✅ ИСПРАВЛЕНИЕ: Добавляем Authorization хедер
+            // ✅ ЕДИНСТВЕННЫЙ FETCH С ЗАГОЛОВКОМ
             const response = await fetch(url, {
                 method: 'GET',
                 headers: { 
@@ -1354,44 +1359,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
-            giftNames = await response.json();
-            if (typeof state !== 'undefined') state.giftNames = giftNames;
+            const data = await response.json();
 
-            console.log("Названия подарков получены с сервера:", giftNames);
+            // Обновляем глобальное состояние
+            if (typeof state !== 'undefined') {
+                state.giftNames = data;
+            } else {
+                giftNames = data;
+            }
+
+            console.log("Названия подарков получены с сервера:", data);
 
             // Сохраняем в кэш
             try {
-                sessionStorage.setItem(cacheKey, JSON.stringify(giftNames));
+                sessionStorage.setItem(cacheKey, JSON.stringify(data));
             } catch (error) {
                 console.error('Не удалось сохранить в кэш:', error);
             }
             
             // Обновляем UI
-            populateDropdown(giftListOptions, giftNames, 'gift');
-            populateMultiSelectDropdown(giftNames);
+            populateDropdown(giftListOptions, data, 'gift');
+            populateMultiSelectDropdown(data);
 
         } catch (error) {
-            console.error('Ошибка при загрузке названий подарков:', error);
-        }
-    }
-
-        try {
-            const response = await fetch(`${SERVER_BASE_URL}/api/ListGifts/AllGiftNames`);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            giftNames = await response.json();
-            console.log("Названия подарков получены с сервера:", giftNames);
-
-            try {
-                sessionStorage.setItem(cacheKey, JSON.stringify(giftNames));
-                console.log("Названия подарков сохранены в кэш sessionStorage.");
-            } catch (error) {
-                console.error('Не удалось сохранить названия подарков в кэш:', error);
-            }
-            
-            populateDropdown(giftListOptions, giftNames, 'gift');
-            populateMultiSelectDropdown(giftNames);
-        } catch (error) {
-            console.error('Ошибка при загрузке названий подарков с сервера:', error);
+            console.error('[API Error] Ошибка при загрузке названий подарков:', error);
         }
     }
 
@@ -1595,6 +1586,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initPage();
 });
+
 
 
 
