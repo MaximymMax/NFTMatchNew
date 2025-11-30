@@ -309,35 +309,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const BYPASS_KEY_STORAGE = 'apiBypassKey';
 
     function getApiAuthHeader() {
-        try {
-            const initData = sessionStorage.getItem(INIT_DATA_KEY);
-            if (initData) {
-                console.log('[AUTH] Using initData from sessionStorage.');
-                return `Tma ${initData}`;
-            }
-        } catch (e) { /* sessionStorage может быть недоступен */ }
+        // 1. Приоритет: Тестовый ключ (Bypass)
+        try {
+            const bypassKey = sessionStorage.getItem(BYPASS_KEY_STORAGE);
+            if (bypassKey) {
+                console.warn(`[AUTH] Using TEST BYPASS KEY.`);
+                return `Tma ${bypassKey}`;
+            }
+        } catch (e) { }
 
-        try {
-            const bypassKey = sessionStorage.getItem(BYPASS_KEY_STORAGE);
-            if (bypassKey) {
-                console.warn(`[AUTH] Using TEST BYPASS KEY for API auth.`);
-                return `Tma ${bypassKey}`;
-            }
-        } catch (e) { /* sessionStorage может быть недоступен */ }
-        
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
-            const directInitData = window.Telegram.WebApp.initData;
-            if (directInitData) {
-                console.warn('[AUTH] Using direct initData (fallback).');
-                // Сохраняем его для будущих запросов на этой странице
-                try { sessionStorage.setItem(INIT_DATA_KEY, directInitData); } catch(e) {}
-                return `Tma ${directInitData}`;
-            }
-        }
+        // 2. Основной: Telegram InitData
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+            const directInitData = window.Telegram.WebApp.initData;
+            if (directInitData) {
+                return `Tma ${directInitData}`;
+            }
+        }
 
-        console.error("[AUTH] Не удалось получить initData или ключ обхода. API-запросы не будут авторизованы.");
-        return 'Tma invalid';
-    }
+        // 3. Fallback: InitData из SessionStorage (если сохраняли ранее)
+        try {
+            const initData = sessionStorage.getItem(INIT_DATA_KEY);
+            if (initData) return `Tma ${initData}`;
+        } catch (e) { }
+
+        console.error("[AUTH] Auth data missing.");
+        return '';
+    }
 
 async function secureFetch(apiUrl, requestBody) {
     const authHeader = getApiAuthHeader();
@@ -699,20 +696,16 @@ async function secureFetch(apiUrl, requestBody) {
         const targetHexColors = state.findBgs.targetColors.map(c => c.hex);
 
         if (targetHexColors.length === 3 && targetHexColors.every(c => /^#[0-9A-F]{6}$/i.test(c))) {
-            apiUrl = `${SERVER_BASE_URL}/api/MonoCoof/TopBackgroundColorsByColors`;
+            apiUrl = `${SERVER_BASE_URL}/api/MonoCoof/TopBackgroundColorsByColors?top=10`;
             requestBody = {
-                ...getTelegramUserData(),
                 Colors: targetHexColors
             };
-            console.log("%c[API Request] Using 3-color search:", 'color: purple', targetHexColors);
         } else if (state.findBgs.selectedGift && state.findBgs.selectedModel) {
-            apiUrl = `${SERVER_BASE_URL}/api/MonoCoof/TopBackgroundColorsByNFT`;
+            apiUrl = `${SERVER_BASE_URL}/api/MonoCoof/TopBackgroundColorsByNFT?top=10`; 
             requestBody = {
-                ...getTelegramUserData(),
                 NameGift: state.findBgs.selectedGift,
                 NameModel: state.findBgs.selectedModel
             };
-            console.log(`%c[API Request] Using NFT-based search for: ${state.findBgs.selectedModel}`, 'color: dodgerblue');
         } else {
             hideLoading();
             resultsGrid.innerHTML = `<p style="text-align: center;">Выберите модель для поиска.</p>`;
@@ -747,9 +740,9 @@ async function secureFetch(apiUrl, requestBody) {
         const isGridEmpty = resultsGrid.innerHTML.trim() === '';
         showLoading(isGridEmpty);
 
-        const url = `${SERVER_BASE_URL}/api/MonoCoof/TopNftByColor`;
+        const url = `${SERVER_BASE_URL}/api/MonoCoof/TopNftByColor?top=10`;
+        
         const requestBody = {
-            ...getTelegramUserData(),
             NameGift: state.findModels.selectedGift,
             NameColor: state.findModels.selectedColor.id,
             MonohromeModelsOnly: true
@@ -1457,6 +1450,7 @@ async function secureFetch(apiUrl, requestBody) {
     // Запускаем наш новый "загрузчик"
     initializeApp();
 });
+
 
 
 
