@@ -589,7 +589,7 @@ async function secureFetch(apiUrl, requestBody) {
                 console.log('%c[Cache Success] Loaded gift names from sessionStorage:', 'color: purple', state.giftNames);
                 populateDropdown(dropdowns.giftBgs.options, state.giftNames, 'gift');
                 populateDropdown(dropdowns.giftModels.options, state.giftNames, 'gift');
-                return;
+                return; 
             }
         } catch (error) {
             console.error('[Cache Error] Ошибка чтения кэша:', error);
@@ -598,9 +598,17 @@ async function secureFetch(apiUrl, requestBody) {
 
         const url = `${SERVER_BASE_URL}/api/ListGifts/AllGiftNames`;
         console.log(`%c[API Request] Fetching all gift names from: ${url}`, 'color: dodgerblue');
+        
         try {
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': getApiAuthHeader()
+                }
+            });
+
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
             state.giftNames = await response.json();
             console.log('%c[API Success] Loaded gift names from server:', 'color: green', state.giftNames);
 
@@ -609,7 +617,7 @@ async function secureFetch(apiUrl, requestBody) {
             } catch (error) {
                 console.error('[Cache Error] Ошибка сохранения в кэш:', error);
             }
-
+            
             populateDropdown(dropdowns.giftBgs.options, state.giftNames, 'gift');
             populateDropdown(dropdowns.giftModels.options, state.giftNames, 'gift');
 
@@ -617,7 +625,6 @@ async function secureFetch(apiUrl, requestBody) {
             console.error('[API Error] Ошибка при загрузке названий подарков:', error);
         }
     }
-
     async function fetchAllModelNames(giftName, updateDOM = true) {
         if (!giftName) {
             if (updateDOM) {
@@ -626,21 +633,27 @@ async function secureFetch(apiUrl, requestBody) {
             state.modelNames = [];
             return;
         }
+        
         const url = `${SERVER_BASE_URL}/api/ListGifts/${encodeURIComponent(giftName)}/AllModelNames`;
         console.log(`%c[API Request] Fetching models for "${giftName}" from: ${url}`, 'color: dodgerblue');
+        
         try {
-            const response = await fetch(url);
+            // ✅ ИСПРАВЛЕНИЕ: Добавляем Authorization хедер
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': getApiAuthHeader()
+                }
+            });
+
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
-            // ✅ НОВАЯ ЛОГИКА: Сервер сразу возвращает массив объектов
-            const modelsList = await response.json();
+            const modelsList = await response.json(); 
             
-            // ✅ НОВАЯ ЛОГИКА: Сохраняем массив объектов напрямую
             state.modelNames = modelsList; 
             console.log(`%c[API Success] Loaded models for "${giftName}":`, 'color: green', state.modelNames);
 
             if (updateDOM) {
-                // ✅ НОВАЯ ЛОГИКА: Передаем в populateDropdown полный массив объектов
                 populateDropdown(dropdowns.modelBgs.options, state.modelNames, 'model');
             }
 
@@ -656,8 +669,16 @@ async function secureFetch(apiUrl, requestBody) {
     async function fetchAndParseMainColors(giftName, modelName) {
         const url = `${SERVER_BASE_URL}/api/ListGifts/${encodeURIComponent(giftName)}/${encodeURIComponent(modelName)}/MainColors`;
         console.log(`%c[API Request] Fetching main colors for "${giftName} - ${modelName}" from: ${url}`, 'color: dodgerblue');
+        
         try {
-            const response = await fetch(url);
+            // ✅ ИСПРАВЛЕНИЕ: Добавляем Authorization хедер
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': getApiAuthHeader()
+                }
+            });
+
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
             const colorsString = await response.text();
@@ -678,6 +699,7 @@ async function secureFetch(apiUrl, requestBody) {
                     hex: '#' + parts[1]
                 };
             }).filter(Boolean);
+            
             console.log(`%c[API Success] Parsed main colors:`, 'color: green', colors);
             return colors;
 
@@ -1450,6 +1472,7 @@ async function secureFetch(apiUrl, requestBody) {
     // Запускаем наш новый "загрузчик"
     initializeApp();
 });
+
 
 
 
