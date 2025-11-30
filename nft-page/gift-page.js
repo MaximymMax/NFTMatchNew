@@ -730,12 +730,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const userData = getTelegramUserData();
 
         const requestBody = {
-            ...userData, 
             "Colors": currentColors, 
             "NameTargetGift": currentColors.length > 0 ? null : selectedGift, 
             "NameTargetModel": currentColors.length > 0 ? null : selectedModel,
             "NamesGift": Array.from(selectedMultiItems),
-            "MonohromeModelsOnly": true
+            "MonohromeModelsOnly": true,
+            // Если ты хочешь задать минимальный коэффициент жестко в JSON (приоритет над URL)
+            "SimilarityThreshold": 0 // или null, если хочешь все
         };
         
         if (currentColors.length > 0 && requestBody.Colors.length === 0) { 
@@ -748,10 +749,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const dataObject = await secureFetch(
-                `${SERVER_BASE_URL}/api/MonoCoof/SimilarNFTs`, 
-                requestBody, 
-                signal
-            );
+                `${SERVER_BASE_URL}/api/MonoCoof/SimilarNFTs?top=10`, 
+                requestBody, 
+                signal
+            );
             similarNFTsData = [];
 
             console.log(dataObject);
@@ -1539,4 +1540,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initPage();
 });
+
 
