@@ -819,7 +819,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 return; 
             }
             console.error('Ошибка при получении данных о похожих NFT:', error);
-            resultsGrid.innerHTML = `<p class="col-span-full text-center text-danger" style="padding: 2rem;">Не удалось загрузить данные. Попробуйте снова. (${error.message})</p>`;
+
+            // --- НОВАЯ ЛОГИКА ОБРАБОТКИ ОШИБОК (FLOOD WAIT) ---
+            const errorMsgLower = error.message.toLowerCase();
+            
+            // Проверяем на код 429 или ключевые слова flood/rate limit
+            if (errorMsgLower.includes('429') || errorMsgLower.includes('flood') || errorMsgLower.includes('rate limit')) {
+                resultsGrid.innerHTML = `
+                    <div class="col-span-full text-center text-danger" style="padding: 2rem; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                        <span style="font-weight: bold; font-size: 1.1em;">Rate limit exceeded.</span>
+                        <span>
+                            If you need API, contact 
+                            <a href="https://t.me/Criminal_hamster" target="_blank" style="color: #58bbf5; text-decoration: underline; font-weight: bold;">@Criminal_hamster</a>
+                        </span>
+                    </div>
+                `;
+            } else {
+                resultsGrid.innerHTML = `<p class="col-span-full text-center text-danger" style="padding: 2rem;">Не удалось загрузить данные. Попробуйте снова. (${error.message})</p>`;
+            }
+
         } finally {
             handleSearchCompletion(false);
         }
@@ -1545,6 +1563,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initPage();
 });
+
 
 
 
