@@ -755,7 +755,22 @@ async function secureFetch(apiUrl, requestBody) {
         } catch (error) {
             console.error('[API Error] Ошибка при поиске фонов:', error);
             hideLoading();
-            resultsGrid.innerHTML = `<p style="text-align: center;">Не удалось загрузить данные.</p>`;
+            
+            // --- НОВАЯ ЛОГИКА (Rate Limit) ---
+            const errorMsgLower = error.message.toLowerCase();
+            if (errorMsgLower.includes('429') || errorMsgLower.includes('flood') || errorMsgLower.includes('rate limit')) {
+                resultsGrid.innerHTML = `
+                    <div class="col-span-full text-center text-danger" style="padding: 2rem; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                        <span style="font-weight: bold; font-size: 1.1em;">Rate limit exceeded.</span>
+                        <span>
+                            If you need API, contact 
+                            <a href="https://t.me/Criminal_hamster" target="_blank" style="color: #58bbf5; text-decoration: underline; font-weight: bold;">@Criminal_hamster</a>
+                        </span>
+                    </div>
+                `;
+            } else {
+                resultsGrid.innerHTML = `<p style="text-align: center;">Не удалось загрузить данные.</p>`;
+            }
         }
     }
 
@@ -796,7 +811,21 @@ async function secureFetch(apiUrl, requestBody) {
         } catch(error) {
              console.error('[API Error] Ошибка при поиске моделей:', error);
              hideLoading();
-             resultsGrid.innerHTML = `<p style="text-align: center;">Не удалось загрузить данные. ${error}</p>`;
+
+             const errorMsgLower = error.message.toLowerCase();
+             if (errorMsgLower.includes('429') || errorMsgLower.includes('flood') || errorMsgLower.includes('rate limit')) {
+                 resultsGrid.innerHTML = `
+                    <div class="col-span-full text-center text-danger" style="padding: 2rem; display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                        <span style="font-weight: bold; font-size: 1.1em;">Rate limit exceeded.</span>
+                        <span>
+                            If you need API, contact 
+                            <a href="https://t.me/Criminal_hamster" target="_blank" style="color: #58bbf5; text-decoration: underline; font-weight: bold;">@Criminal_hamster</a>
+                        </span>
+                    </div>
+                 `;
+             } else {
+                 resultsGrid.innerHTML = `<p style="text-align: center;">Не удалось загрузить данные. ${error}</p>`;
+             }
         }
     }
 
@@ -1475,6 +1504,7 @@ async function secureFetch(apiUrl, requestBody) {
     // Запускаем наш новый "загрузчик"
     initializeApp();
 });
+
 
 
 
